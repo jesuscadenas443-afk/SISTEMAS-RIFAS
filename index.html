@@ -103,7 +103,7 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <div class="max-w-6xl mx-auto w-full px-4 pt-6 space-y-6">
 
-        <!-- BANNER DE GANADOR -->
+        <!-- BANNER GLOBAL DE GANADOR (VISIBLE EN TODOS LOS DISPOSITIVOS) -->
         <div id="winnerPublicBanner" class="hidden relative bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 p-6 rounded-3xl shadow-2xl border-2 border-yellow-200 text-center space-y-2 animate-bounce">
             <span class="bg-slate-950 text-amber-400 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-widest">
                 🏆 ¡TENEMOS GANADOR OFICIAL DEL SORTEO! 🏆
@@ -111,8 +111,8 @@
             <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight">
                 ¡BOLETO GANADOR: <span id="winnerNumberBanner" class="bg-slate-950 text-yellow-300 font-mono px-4 py-1 rounded-2xl">#00</span>!
             </h2>
-            <p class="text-xs sm:text-sm font-bold text-slate-900">
-                Sorteo finalizado. Las compras han sido bloqueadas. Consulta tu boleto abajo.
+            <p id="winnerBuyerInfo" class="text-xs sm:text-sm font-bold text-slate-950">
+                Sorteo finalizado. Las compras han sido bloqueadas.
             </p>
         </div>
 
@@ -516,7 +516,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE REALTIME REAL Y SINCRONIZACIÓN PERSISTENTE -->
+    <!-- SCRIPT REALTIME TRANSMISIÓN GLOBAL Y PERSISTENCIA PERMANENTE -->
     <script>
         const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
@@ -591,10 +591,10 @@
 
             await sincronizarTodo();
 
-            // MANTENER TIEMPO REAL INCLUSO SI FALLAN WEBSOCKETS (Sincronización Polling cada 3s)
+            // Sincronización híbrida contínua cada 2 segundos para garantizar actualización en TODOS los móviles
             setInterval(async () => {
                 await sincronizarTodo();
-            }, 3000);
+            }, 2000);
         });
 
         async function sincronizarTodo() {
@@ -603,13 +603,13 @@
         }
 
         // ==========================================
-        // 🔄 ACTUALIZACIÓN EN TIEMPO REAL (REALTIME)
+        // 🔄 SUSCRIPCIÓN BROADCAST Y REALTIME DUAL
         // ==========================================
         function suscripcionTiempoReal() {
             if (!_supabase) return;
 
             _supabase
-                .channel('realtime_global')
+                .channel('schema-db-changes')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_numbers' }, () => {
                     cargarEstadoNumeros();
                 })
@@ -633,7 +633,7 @@
             raffleConfig.phone = data.phone || raffleConfig.phone;
             raffleConfig.cedula = data.cedula || raffleConfig.cedula;
             raffleConfig.whatsapp = data.whatsapp || data.phone || raffleConfig.whatsapp;
-            raffleConfig.winner_number = data.winner_number !== null && data.winner_number !== undefined ? data.winner_number : "";
+            raffleConfig.winner_number = (data.winner_number !== null && data.winner_number !== undefined) ? data.winner_number : "";
             if (data.img1) raffleConfig.img1 = data.img1;
             if (data.img2) raffleConfig.img2 = data.img2;
             if (data.img3) raffleConfig.img3 = data.img3;
@@ -678,8 +678,18 @@
 
         function actualizarBannerGanadorPublico() {
             const winnerBanner = document.getElementById('winnerPublicBanner');
-            if (raffleConfig.winner_number) {
-                document.getElementById('winnerNumberBanner').innerText = `#${raffleConfig.winner_number}`;
+            const winnerNum = (raffleConfig.winner_number || "").toString().trim();
+
+            if (winnerNum !== "") {
+                document.getElementById('winnerNumberBanner').innerText = `#${winnerNum}`;
+                const itemWinner = numbersData[winnerNum];
+                
+                if (itemWinner && itemWinner.name) {
+                    document.getElementById('winnerBuyerInfo').innerText = `¡Felicidades a ${itemWinner.name} (CI: ${itemWinner.ci})! Sorteo finalizado.`;
+                } else {
+                    document.getElementById('winnerBuyerInfo').innerText = `Sorteo finalizado oficialmente. Las compras están bloqueadas.`;
+                }
+
                 winnerBanner.classList.remove('hidden');
             } else {
                 winnerBanner.classList.add('hidden');
@@ -704,7 +714,8 @@
                     });
                 }
 
-                const hayGanador = Boolean(raffleConfig.winner_number);
+                const numWinner = (raffleConfig.winner_number || "").toString().trim();
+                const hayGanador = Boolean(numWinner !== "");
                 const quickSelectBox = document.getElementById('boxQuickSelect');
 
                 if (hayGanador) {
@@ -724,7 +735,7 @@
                     const status = item ? item.status : 'available';
 
                     if (hayGanador) {
-                        if (numStr === raffleConfig.winner_number) {
+                        if (numStr === numWinner) {
                             btn.className = 'h-12 sm:h-14 bg-amber-400 text-slate-950 font-mono font-black text-base sm:text-lg rounded-2xl border-4 border-yellow-200 animate-bounce flex items-center justify-center shadow-2xl';
                             btn.innerText = `🏆 ${numStr}`;
                         } else {
@@ -1078,6 +1089,7 @@
             raffleConfig.winner_number = numWinner;
 
             if (_supabase) {
+                // Guardar permanentemente en la DB con ID = 1
                 await _supabase.from('raffle_config').upsert({
                     id: 1,
                     title: raffleConfig.title,
@@ -1143,16 +1155,16 @@
         }
 
         function revisarEstadoGanadorAdmin() {
-            const numWinner = raffleConfig.winner_number;
+            const numWinner = (raffleConfig.winner_number || "").toString().trim();
             const btnNotif = document.getElementById('btnNotificarGanadorWA');
             const statusTxt = document.getElementById('winnerAdminStatus');
 
-            if (numWinner && numbersData[numWinner]) {
+            if (numWinner !== "" && numbersData[numWinner]) {
                 const itemWinner = numbersData[numWinner];
                 statusTxt.innerHTML = `<span class="text-amber-400 font-bold">¡Ganador actual!</span> Boleto <strong>#${numWinner}</strong> comprado por: <strong>${itemWinner.name}</strong> (CI: ${itemWinner.ci}).`;
                 btnNotif.disabled = false;
                 btnNotif.className = "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 shadow transition cursor-pointer";
-            } else if (numWinner) {
+            } else if (numWinner !== "") {
                 statusTxt.innerHTML = `<span class="text-rose-400">El boleto #${numWinner} aún no tiene comprador registrado.</span>`;
                 btnNotif.disabled = true;
                 btnNotif.className = "bg-slate-800 text-slate-500 font-extrabold px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 cursor-not-allowed";
@@ -1164,7 +1176,7 @@
         }
 
         function notificarGanadorWA() {
-            const numWinner = raffleConfig.winner_number;
+            const numWinner = (raffleConfig.winner_number || "").toString().trim();
             const itemWinner = numbersData[numWinner];
             if (!itemWinner) return;
 
