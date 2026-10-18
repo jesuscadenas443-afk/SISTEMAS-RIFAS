@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gran Rifa Digital UNERG • Sistema Oficial</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- html2canvas para descargar el Ticket como Imagen -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-modal {
+            background: rgba(11, 16, 29, 0.95);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(245, 158, 11, 0.25);
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 20px -3px rgba(245, 158, 11, 0.3); }
+            50% { box-shadow: 0 0 35px 5px rgba(245, 158, 11, 0.55); }
+        }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-6px) rotate(3deg); }
+        }
+
+        .glow-dynamic { animation: pulseGlow 4s infinite ease-in-out; }
+        .float-anim { animation: floatIcon 3s infinite ease-in-out; }
+
+        #ticketCaptureArea {
+            background: linear-gradient(135deg, #0b101d 0%, #161f36 100%);
+        }
+    </style>
+</head>
+<body class="bg-[#050811] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-slate-950">
+
+    <!-- BANNER DE NOTIFICACIÓN FLOTANTE (TOAST) -->
+    <div id="toastNotification" class="fixed top-5 right-5 z-50 transform translate-x-full opacity-0 transition-all duration-500 max-w-sm w-full bg-emerald-500 text-slate-950 p-4 rounded-2xl shadow-2xl border border-emerald-300 flex items-center gap-3 font-bold text-xs pointer-events-none">
+        <div class="w-9 h-9 bg-slate-950/20 rounded-xl flex items-center justify-center text-slate-950 text-lg">
+            <i class="fa-solid fa-circle-check animate-bounce"></i>
+        </div>
+        <div>
+            <p class="font-black uppercase tracking-wider text-[10px] text-slate-900">Notificación del Sistema</p>
+            <p id="toastMessage" class="text-xs text-slate-950 font-bold">¡Operación realizada con éxito!</p>
+        </div>
+    </div>
+
+    <!-- HEADER DINÁMICO -->
+    <header class="bg-[#0b101d]/90 backdrop-blur-xl border-b border-slate-800/80 sticky top-0 z-40 shadow-2xl">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center flex-wrap gap-3">
+            
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 via-amber-400 to-yellow-300 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-amber-500/30 float-anim ring-2 ring-amber-400/40">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <h1 id="displayTitle" class="text-base sm:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-yellow-400 tracking-tight">
+                        Gran Rifa Digital UNERG
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-medium flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-ping"></span> Sistema Oficial de Boletos
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <div class="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-yellow-500/10 border border-amber-500/40 px-3.5 py-1.5 rounded-2xl flex items-center gap-2 shadow-lg">
+                    <i class="fa-solid fa-tag text-amber-400 text-xs"></i>
+                    <div class="text-right">
+                        <p class="text-[9px] uppercase tracking-wider font-extrabold text-amber-400/80 leading-none">Valor Boleto</p>
+                        <p class="text-xs sm:text-sm font-black text-amber-300 font-mono leading-tight">
+                            $<span id="ticketPriceUsdDisplay">2.00</span> USD
+                        </p>
+                    </div>
+                </div>
+
+                <div class="hidden sm:flex bg-[#131b2e] border border-slate-800 px-3 py-1.5 rounded-2xl text-emerald-400 font-mono text-xs items-center gap-2 shadow-inner">
+                    <i class="fa-solid fa-coins text-amber-400"></i>
+                    BCV: <span id="bcvRateDisplay" class="font-bold text-slate-200">881,06</span>
+                </div>
+
+                <button onclick="openAdminModal()" class="text-xs bg-slate-800/90 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-2xl transition border border-slate-700/80 flex items-center gap-1.5 shadow-md hover:border-amber-400">
+                    <i class="fa-solid fa-user-gear text-amber-400"></i> Admin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="max-w-6xl mx-auto w-full px-4 pt-6 space-y-6">
+
+        <!-- BANNER PRINCIPAL + METODOLOGÍA -->
+        <div class="relative bg-gradient-to-br from-[#131b2e] via-[#0b101d] to-amber-950/30 border border-amber-500/30 p-6 sm:p-8 rounded-3xl shadow-2xl overflow-hidden glow-dynamic">
+            <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+                <div class="lg:col-span-7 space-y-3.5 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-black px-3.5 py-1 rounded-full uppercase tracking-widest">
+                        <i class="fa-solid fa-fire text-xs animate-pulse"></i> Sorteo Oficial en Vivo
+                    </div>
+                    <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-white leading-tight">
+                        ¡Gana Excelente Premio Apoyando Nuestra Meta!
+                    </h2>
+                    <p id="raffleDescription" class="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+                        Participa seleccionando tus números favoritos del 00 al 99. Aceptamos Pago Móvil, Binance, Zelle y Pago en Efectivo.
+                    </p>
+
+                    <div class="pt-2">
+                        <div class="inline-flex items-center gap-2 bg-slate-900/90 border border-amber-500/40 px-4 py-2 rounded-2xl text-xs font-semibold text-amber-300 shadow-md">
+                            <i class="fa-solid fa-clapperboard text-amber-400"></i>
+                            <span>Sorteo: <strong id="raffleMethodDisplay" class="text-white font-bold">Lotería del Táchira (Súper Gana 10:00 PM)</strong></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5 bg-gradient-to-b from-[#18223a] to-[#0d1424] border border-amber-500/40 p-5 rounded-3xl text-center shadow-xl space-y-2 hover:scale-[1.02] transition-transform duration-300">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-wider">Costo por Boleto</span>
+                    <div class="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-200 font-mono">
+                        $<span id="bigPriceUsd">2.00</span> <span class="text-sm text-amber-400 font-sans">USD</span>
+                    </div>
+                    <div class="bg-[#070a12]/80 border border-slate-800 py-1.5 px-3 rounded-xl text-xs font-mono text-emerald-400 font-bold">
+                        ≈ <span id="bigPriceBs">1.762,12</span> Bs (Efectivo / PM)
+                    </div>
+                    <p class="text-[10px] text-slate-400">Tasa Oficial Banco Central de Venezuela</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- MÓDULO GALERÍA DE PREMIOS -->
+        <div class="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
+                <h3 class="text-xs sm:text-sm font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-images text-base float-anim"></i> Galería de Premios (Haz Clic para Ampliar)
+                </h3>
+                <span class="text-[11px] text-slate-400 font-medium">Toca para Zoom</span>
+            </div>
+            
+            <div id="prizeImageGallery" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div onclick="agrandarImagen(document.getElementById('imgPrize1').src)" class="relative group overflow-hidden rounded-2xl border border-slate-800 bg-[#070a12] aspect-video cursor-pointer hover:border-amber-400/60 transition-all duration-300 shadow-lg">
+                    <img id="imgPrize1" src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80" alt="Premio 1" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-slate-950/50 group-hover:bg-slate-950/20 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <span class="bg-amber-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xl"><i class="fa-solid fa-magnifying-glass-plus"></i> Ampliar</span>
+                    </div>
+                    <span class="absolute bottom-2 left-3 text-[11px] font-bold text-amber-300 drop-shadow">Premio Principal</span>
+                </div>
+                <div onclick="agrandarImagen(document.getElementById('imgPrize2').src)" class="relative group overflow-hidden rounded-2xl border border-slate-800 bg-[#070a12] aspect-video cursor-pointer hover:border-amber-400/60 transition-all duration-300 shadow-lg">
+                    <img id="imgPrize2" src="https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80" alt="Premio 2" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-slate-950/50 group-hover:bg-slate-950/20 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <span class="bg-amber-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xl"><i class="fa-solid fa-magnifying-glass-plus"></i> Ampliar</span>
+                    </div>
+                    <span class="absolute bottom-2 left-3 text-[11px] font-bold text-slate-200 drop-shadow">Detalles del Premio</span>
+                </div>
+                <div onclick="agrandarImagen(document.getElementById('imgPrize3').src)" class="relative group overflow-hidden rounded-2xl border border-slate-800 bg-[#070a12] aspect-video sm:col-span-2 md:col-span-1 cursor-pointer hover:border-amber-400/60 transition-all duration-300 shadow-lg">
+                    <img id="imgPrize3" src="https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80" alt="Premio 3" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <div class="absolute inset-0 bg-slate-950/50 group-hover:bg-slate-950/20 transition flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <span class="bg-amber-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-xl"><i class="fa-solid fa-magnifying-glass-plus"></i> Ampliar</span>
+                    </div>
+                    <span class="absolute bottom-2 left-3 text-[11px] font-bold text-slate-200 drop-shadow">Garantía / Entrega</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- MÓDULO ESTADÍSTICAS -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="glass-card p-4 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] uppercase font-bold text-slate-400 block"><i class="fa-solid fa-check-double text-slate-400"></i> Disponibles</span>
+                <p id="countAvailableText" class="text-xl sm:text-2xl font-black text-slate-100 font-mono">100</p>
+            </div>
+            <div class="glass-card p-4 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] uppercase font-bold text-amber-400 block"><i class="fa-solid fa-clock text-amber-400"></i> Pendientes</span>
+                <p id="countPendingText" class="text-xl sm:text-2xl font-black text-amber-400 font-mono">0</p>
+            </div>
+            <div class="glass-card p-4 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] uppercase font-bold text-rose-400 block"><i class="fa-solid fa-shield-check text-rose-400"></i> Confirmados</span>
+                <p id="countSoldText" class="text-xl sm:text-2xl font-black text-rose-400 font-mono">0</p>
+            </div>
+            <div class="glass-card p-4 rounded-2xl text-center space-y-1">
+                <span class="text-[10px] uppercase font-bold text-emerald-400 block"><i class="fa-solid fa-chart-line text-emerald-400"></i> Vendido</span>
+                <p id="progressText" class="text-xl sm:text-2xl font-black text-emerald-400 font-mono">0%</p>
+            </div>
+        </div>
+
+        <!-- Barra de Progreso -->
+        <div class="glass-card p-4 rounded-2xl space-y-2">
+            <div class="w-full bg-[#070a12] h-4 rounded-full overflow-hidden p-0.5 border border-slate-800 flex shadow-inner">
+                <div id="progressBarSold" class="bg-gradient-to-r from-rose-600 to-rose-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+                <div id="progressBarPending" class="bg-gradient-to-r from-amber-600 to-yellow-500 h-full rounded-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- MÓDULO SELECCIÓN RÁPIDA -->
+        <div class="glass-card p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 border-amber-500/20">
+            <div class="space-y-1 text-center sm:text-left">
+                <h3 class="text-sm font-bold text-slate-200 flex items-center justify-center sm:justify-start gap-2">
+                    <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Selección Rápida al Azar
+                </h3>
+                <p class="text-xs text-slate-400">Haz clic para escoger números aleatorios libres.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="seleccionarAzar(1)" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-3.5 py-2 rounded-xl text-xs transition border border-slate-700 hover:scale-105">+1 Azar</button>
+                <button onclick="seleccionarAzar(2)" class="bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold px-3.5 py-2 rounded-xl text-xs transition border border-slate-700 hover:scale-105">+2 Azar</button>
+                <button onclick="seleccionarAzar(5)" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs transition shadow-lg shadow-amber-500/20 uppercase hover:scale-105">+5 Azar</button>
+            </div>
+        </div>
+
+        <!-- MÓDULO BUSCADOR Y CONSULTA DE TICKET OFICIAL -->
+        <div class="glass-card p-4 sm:p-5 rounded-3xl space-y-3">
+            <label class="block text-xs font-bold text-slate-300 flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-amber-400"></i> Consultar mis boletos y descargar ticket oficial:
+            </label>
+            <div class="flex gap-2.5">
+                <input type="text" id="searchTicketInput" placeholder="Ej: V-30668946 o el número 07" class="flex-1 bg-[#070a12] border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-100 outline-none focus:border-amber-400 transition font-mono">
+                <button onclick="consultarBoleto()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-xs transition shadow-lg shadow-amber-500/20 uppercase tracking-wide">
+                    Consultar
+                </button>
+            </div>
+            <div id="searchResultBox" class="hidden text-xs p-3.5 rounded-2xl border mt-2 space-y-2"></div>
+        </div>
+
+    </div>
+
+    <!-- MATRIZ PRINCIPAL DE NÚMEROS (00-99) -->
+    <main class="max-w-6xl mx-auto w-full p-4 flex-1 mt-4">
+        <div class="mb-5 text-xs text-slate-400 flex flex-wrap gap-4 items-center justify-center glass-card p-3.5 rounded-2xl">
+            <span class="flex items-center gap-2"><span class="w-4 h-4 bg-[#131b2e] border border-slate-700 rounded-lg"></span> Disponible</span>
+            <span class="flex items-center gap-2"><span class="w-4 h-4 bg-amber-400 rounded-lg shadow shadow-amber-500/50"></span> Seleccionado</span>
+            <span class="flex items-center gap-2"><span class="w-4 h-4 bg-amber-600 rounded-lg animate-pulse"></span> Pendiente</span>
+            <span class="flex items-center gap-2"><span class="w-4 h-4 bg-rose-600 rounded-lg"></span> Vendido</span>
+        </div>
+
+        <div id="gridNumbers" class="grid grid-cols-5 sm:grid-cols-10 gap-2.5 sm:gap-3 mb-16"></div>
+    </main>
+
+    <!-- BARRA FLOTANTE CALCULADORA DE COMPRA -->
+    <div id="purchaseBar" class="fixed bottom-0 left-0 right-0 bg-[#0b101d]/95 backdrop-blur-2xl border-t border-slate-800 p-4.5 shadow-2xl transition-all duration-300 transform translate-y-full z-30">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div>
+                <p class="text-xs text-slate-400">Boleto(s) Seleccionado(s): <span id="selectedListText" class="text-amber-400 font-black font-mono text-sm">Ninguno</span></p>
+                <p class="text-xs text-slate-300 pt-0.5">Total a Pagar: <span id="totalUsdText" class="text-emerald-400 font-black text-base">$0.00 USD</span> (<span id="totalBsvText" class="text-emerald-400 font-mono font-bold">0.00 Bs</span>)</p>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button onclick="limpiarSeleccion()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-4 py-3 rounded-2xl text-xs font-bold transition">Limpiar</button>
+                <button onclick="abrirModalPago()" class="flex-1 sm:flex-none bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black px-7 py-3 rounded-2xl transition shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                    <i class="fa-solid fa-cart-shopping text-sm"></i> Reportar Pago Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ZOOM IMAGEN (LIGHTBOX) -->
+    <div id="modalLightbox" class="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-50 hidden flex flex-col items-center justify-center p-4" onclick="cerrarLightbox()">
+        <button onclick="cerrarLightbox()" class="absolute top-5 right-5 text-slate-300 hover:text-white text-3xl z-10 bg-slate-900/80 w-12 h-12 rounded-full flex items-center justify-center border border-slate-700">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <img id="lightboxImg" src="" alt="Imagen Agrandada" class="max-w-full max-h-[85vh] object-contain rounded-3xl border border-amber-500/30 shadow-2xl">
+        <p class="text-xs text-slate-400 mt-3 font-medium">Haz clic en cualquier parte para cerrar</p>
+    </div>
+
+    <!-- MODAL DE PAGO -->
+    <div id="modalPago" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="cerrarModalPago()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-100 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-lg font-black text-amber-400 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-file-invoice-dollar"></i> Reportar Pago de Boleto
+            </h2>
+
+            <div class="space-y-2 mb-4">
+                <label class="block text-xs font-bold text-slate-300">Selecciona el Método de Pago:</label>
+                <select id="selectMetodoPago" onchange="toggleMetodoPagoUI()" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs font-bold outline-none focus:border-amber-400">
+                    <option value="pago_movil">📱 Pago Móvil (Bolívares)</option>
+                    <option value="efectivo">💵 Pago en Efectivo (Divisas / Entrega Personal)</option>
+                </select>
+            </div>
+
+            <div id="boxPagoMovilData" class="bg-[#070a12] border border-slate-800 rounded-2xl p-4 mb-4 text-xs space-y-1.5 shadow-inner">
+                <p class="font-bold text-amber-400 text-xs border-b border-slate-800/80 pb-1.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Datos Bancarios Pago Móvil:
+                </p>
+                <div class="grid grid-cols-2 gap-1.5 text-[11px] pt-1">
+                    <p><span class="text-slate-400">Banco:</span> <br><strong id="pmBank" class="text-slate-200">Banco de Venezuela</strong></p>
+                    <p><span class="text-slate-400">Teléfono PM:</span> <br><strong id="pmPhone" class="text-slate-200 font-mono">04125668044</strong></p>
+                    <p class="col-span-2"><span class="text-slate-400">Cédula:</span> <strong id="pmCedula" class="text-slate-200 font-mono">V-30668946</strong></p>
+                </div>
+            </div>
+
+            <div id="boxEfectivoData" class="hidden bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3.5 mb-4 text-xs text-amber-300 space-y-1">
+                <p class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-hand-holding-dollar"></i> Pago en Efectivo Seleccionado:</p>
+                <p class="text-[11px] text-slate-300">Entregarás el dinero directamente al organizador. El boleto quedará registrado en espera de confirmación.</p>
+            </div>
+
+            <form id="formPago" onsubmit="procesarPago(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Número(s) a Reservar</label>
+                    <input type="text" id="inputNumero" readonly class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-amber-400 font-black font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Nombre Completo *</label>
+                    <input type="text" id="inputNombre" required placeholder="Ej: Juan Pérez" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:border-amber-400 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Cédula de Identidad *</label>
+                    <input type="text" id="inputCedula" required placeholder="Ej: V-12345678" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:border-amber-400 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Teléfono Comprador (WhatsApp) *</label>
+                    <input type="tel" id="inputTelefono" required placeholder="Ej: 04121234567" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:border-amber-400 outline-none transition">
+                </div>
+                <div id="fieldReferencia">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Nº de Referencia de Pago *</label>
+                    <input type="text" id="inputReferencia" placeholder="Últimos 4 o 6 dígitos" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs focus:border-amber-400 outline-none transition">
+                </div>
+                <div id="fieldCapture">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Adjuntar Capture / Comprobante</label>
+                    <input type="file" id="inputCapture" accept="image/*" class="w-full text-xs text-slate-400 bg-[#070a12] border border-slate-800 rounded-2xl p-2 cursor-pointer">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" id="btnSubmit" class="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-xl shadow-emerald-500/20 flex items-center justify-center gap-2 text-xs uppercase tracking-wider">
+                        <i class="fa-brands fa-whatsapp text-base"></i> Enviar Reporte de Pago por WhatsApp
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL DE TICKET OFICIAL DESCARGABLE (SOLO SE ABRE CUANDO EL PAGO ESTÁ CONFIRMADO) -->
+    <div id="modalTicket" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal rounded-3xl p-6 max-w-sm w-full shadow-2xl relative space-y-4 text-center">
+            <button onclick="cerrarModalTicket()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100 text-xl"><i class="fa-solid fa-xmark"></i></button>
+
+            <!-- ÁREA CAPTURABLE DEL TICKET OFICIAL -->
+            <div id="ticketCaptureArea" class="p-5 rounded-2xl border border-amber-500/40 text-center space-y-3 shadow-2xl">
+                <div class="flex items-center justify-center gap-2 border-b border-amber-500/30 pb-2">
+                    <div class="w-8 h-8 bg-amber-500/20 text-amber-400 rounded-xl flex items-center justify-center text-base border border-amber-500/40">
+                        <i class="fa-solid fa-ticket"></i>
+                    </div>
+                    <span class="font-black text-amber-400 text-sm uppercase tracking-tight" id="ticketTitleModal">Gran Rifa Digital</span>
+                </div>
+
+                <p class="text-[10px] text-emerald-400 uppercase tracking-widest font-black">⭐ TICKET OFICIAL CONFIRMADO ⭐</p>
+                <div class="text-lg font-black text-amber-300 font-mono tracking-widest bg-amber-500/10 py-1 rounded-xl border border-amber-500/20" id="ticketCodeDisplay">TCK-000000</div>
+
+                <div class="bg-[#070a12]/90 border border-slate-800 rounded-xl p-3 text-left text-xs space-y-1.5 font-mono">
+                    <p class="border-b border-slate-800/80 pb-1 flex justify-between"><span class="text-slate-400">Comprador:</span> <strong id="tktNombre" class="text-slate-100">...</strong></p>
+                    <p class="border-b border-slate-800/80 pb-1 flex justify-between"><span class="text-slate-400">Cédula:</span> <strong id="tktCedula" class="text-slate-100">...</strong></p>
+                    <p class="border-b border-slate-800/80 pb-1 flex justify-between"><span class="text-slate-400">Boleto(s):</span> <strong id="tktNumeros" class="text-amber-400 font-black text-sm">...</strong></p>
+                    <p class="border-b border-slate-800/80 pb-1 flex justify-between"><span class="text-slate-400">Ref / Método:</span> <strong id="tktRef" class="text-slate-100">...</strong></p>
+                    <p class="flex justify-between"><span class="text-slate-400">Estado:</span> <strong class="text-emerald-400 font-bold">🟢 PAGADO / VÁLIDO</strong></p>
+                </div>
+
+                <p class="text-[9px] text-slate-400 font-sans italic">Presenta este ticket digital al momento del sorteo.</p>
+            </div>
+
+            <!-- BOTONES DE ACCIÓN -->
+            <div class="space-y-2 pt-1">
+                <button onclick="descargarTicketImagen()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-950 font-black py-3 rounded-2xl transition flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-lg">
+                    <i class="fa-solid fa-download text-sm"></i> Descargar Ticket (Imagen)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE ADMINISTRACIÓN -->
+    <div id="modalAdmin" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal rounded-3xl p-6 sm:p-7 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAdminModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-100 text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h2 class="text-lg font-black text-amber-400 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-user-gear"></i> Panel de Administración del Sorteo
+            </h2>
+
+            <div id="adminAuthSection" class="space-y-4">
+                <p class="text-xs text-slate-300">Ingresa la clave de administrador:</p>
+                <input type="password" id="adminPassInput" placeholder="Clave admin (Ej: 1234)" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs outline-none focus:border-amber-400">
+                <button onclick="loginAdmin()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-2xl text-xs transition shadow-lg">Acceder al Panel</button>
+            </div>
+
+            <div id="adminContentSection" class="hidden space-y-6">
+                
+                <!-- REGISTRO VENTA EFECTIVO -->
+                <div class="bg-gradient-to-r from-emerald-950/40 via-[#070a12] to-slate-900 p-4 sm:p-5 rounded-3xl border border-emerald-500/30 space-y-3">
+                    <h3 class="font-bold text-xs text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-money-bill-wave"></i> Registro de Venta Directa en Efectivo
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-2.5 text-xs">
+                        <input type="text" id="adminCashNum" placeholder="Nº Boleto (Ej: 07)" class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100 font-mono">
+                        <input type="text" id="adminCashName" placeholder="Nombre Comprador" class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        <input type="text" id="adminCashCi" placeholder="Cédula (Ej: V-123456)" class="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        <button onclick="registrarVentaEfectivoAdmin()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl transition uppercase text-[11px] shadow">Vender en Efectivo</button>
+                    </div>
+                </div>
+
+                <!-- CONFIGURACIÓN -->
+                <div class="bg-[#070a12]/70 p-4 sm:p-5 rounded-3xl border border-slate-800 space-y-3">
+                    <h3 class="font-bold text-xs text-amber-400 border-b border-slate-800 pb-2">Configuración General del Sorteo</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div class="sm:col-span-2">
+                            <label class="block text-slate-400 mb-1">Título de la Rifa</label>
+                            <input type="text" id="adminTitleInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-slate-400 mb-1">Metodología de Sorteo / Lotería *</label>
+                            <input type="text" id="adminMethodInput" placeholder="Ej: Con la Lotería del Táchira (Súper Gana 10:00 PM)" class="w-full bg-slate-900 border border-amber-500/40 rounded-xl p-2.5 text-amber-300 font-semibold">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="block text-slate-400 mb-1">Descripción / Premio</label>
+                            <input type="text" id="adminDescInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Precio ($ USD)</label>
+                            <input type="number" step="0.01" id="adminPriceInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Tasa BCV (Bs/$)</label>
+                            <input type="number" step="0.01" id="adminBcvInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        </div>
+                        
+                        <div class="sm:col-span-2 space-y-3 pt-3 border-t border-slate-800">
+                            <label class="block text-amber-400 font-bold flex items-center gap-2">
+                                <i class="fa-solid fa-images"></i> Cargar Imágenes del Premio (Galería o URL):
+                            </label>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                <div><span class="text-[10px] text-slate-400">Foto 1</span><input type="file" id="filePrize1" accept="image/*" class="w-full text-[10px] text-slate-300"></div>
+                                <div><span class="text-[10px] text-slate-400">O URL 1</span><input type="text" id="adminImg1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-100 font-mono text-[10px]"></div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                <div><span class="text-[10px] text-slate-400">Foto 2</span><input type="file" id="filePrize2" accept="image/*" class="w-full text-[10px] text-slate-300"></div>
+                                <div><span class="text-[10px] text-slate-400">O URL 2</span><input type="text" id="adminImg2" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-100 font-mono text-[10px]"></div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800">
+                                <div><span class="text-[10px] text-slate-400">Foto 3</span><input type="file" id="filePrize3" accept="image/*" class="w-full text-[10px] text-slate-300"></div>
+                                <div><span class="text-[10px] text-slate-400">O URL 3</span><input type="text" id="adminImg3" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-1.5 text-slate-100 font-mono text-[10px]"></div>
+                            </div>
+                        </div>
+
+                        <div><label class="block text-slate-400 mb-1">Banco Pago Móvil</label><input type="text" id="adminBankInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100"></div>
+                        <div><label class="block text-slate-400 mb-1">Teléfono Pago Móvil</label><input type="text" id="adminPhoneInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100"></div>
+                        <div><label class="block text-slate-400 mb-1">Cédula Pago Móvil</label><input type="text" id="adminCedulaInput" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100"></div>
+                        <div><label class="block text-emerald-400 font-bold mb-1">WhatsApp Personal *</label><input type="text" id="adminWhatsappInput" class="w-full bg-slate-900 border border-emerald-500/50 rounded-xl p-2.5 text-slate-100"></div>
+                    </div>
+                    <button onclick="guardarAjustesAdmin()" id="btnSaveAdmin" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-5 py-2.5 rounded-xl transition shadow">Guardar Ajustes de la Rifa</button>
+                </div>
+
+                <!-- Tabla Admin -->
+                <div class="bg-[#070a12]/70 p-4 sm:p-5 rounded-3xl border border-slate-800">
+                    <h3 class="font-bold text-xs text-amber-400 mb-3 border-b border-slate-800 pb-2">Control de Boletos y Compradores</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-[11px] border-collapse">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-800">
+                                    <th class="p-2">Nº</th>
+                                    <th class="p-2">Estado</th>
+                                    <th class="p-2">Nombre</th>
+                                    <th class="p-2">Cédula</th>
+                                    <th class="p-2">Ref / Método</th>
+                                    <th class="p-2">Capture</th>
+                                    <th class="p-2">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
+
+        let _supabase = null;
+        let selectedNumbers = [];
+        let numbersData = {}; 
+        let ultimoTicket = null;
+
+        let raffleConfig = {
+            title: "Gran Rifa Digital UNERG",
+            description: "Participa con el número de tu preferencia del 00 al 99. ¡Apoya nuestro proyecto de grado!",
+            method: "Lotería del Táchira (Súper Gana 10:00 PM)",
+            price: 2.00,
+            bcvRate: 881.06,
+            bank: "Banco de Venezuela",
+            phone: "04125668044",
+            cedula: "V-30668946",
+            whatsapp: "04125668044",
+            img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
+            img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80",
+            img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80"
+        };
+
+        let isAdminLoggedIn = false;
+
+        function mostrarToast(mensaje) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = mensaje;
+            toast.classList.remove('translate-x-full', 'opacity-0');
+            setTimeout(() => { toast.classList.add('translate-x-full', 'opacity-0'); }, 4000);
+        }
+
+        function agrandarImagen(url) {
+            if (!url) return;
+            document.getElementById('lightboxImg').src = url;
+            document.getElementById('modalLightbox').classList.remove('hidden');
+        }
+
+        function cerrarLightbox() { document.getElementById('modalLightbox').classList.add('hidden'); }
+
+        function renderGridInmediato() {
+            const grid = document.getElementById('gridNumbers');
+            if (!grid) return;
+            grid.innerHTML = '';
+            for (let i = 0; i < 100; i++) {
+                const numStr = i.toString().padStart(2, '0');
+                const btn = document.createElement('button');
+                btn.id = `btn-num-${numStr}`;
+                btn.className = 'h-12 sm:h-14 bg-[#131b2e] border border-slate-800 rounded-2xl font-mono font-bold text-sm sm:text-base text-slate-200 hover:border-amber-400 transition-all hover:scale-105 flex items-center justify-center shadow-lg cursor-pointer';
+                btn.innerText = numStr;
+                btn.onclick = () => toggleSelectNumber(numStr);
+                grid.appendChild(btn);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderGridInmediato();
+            if (window.supabase) {
+                try { _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+            }
+            actualizarUIConfiguracion();
+            cargarConfiguracion();
+            cargarEstadoNumeros();
+        });
+
+        async function cargarConfiguracion() {
+            if (!_supabase) return;
+            try {
+                const { data } = await _supabase.from('raffle_config').select('*').eq('id', 1).maybeSingle();
+                if (data) {
+                    raffleConfig.title = data.title || raffleConfig.title;
+                    raffleConfig.description = data.description || raffleConfig.description;
+                    raffleConfig.method = data.method || raffleConfig.method;
+                    raffleConfig.price = parseFloat(data.price) || raffleConfig.price;
+                    raffleConfig.bcvRate = parseFloat(data.bcv_rate) || raffleConfig.bcvRate;
+                    raffleConfig.bank = data.bank || raffleConfig.bank;
+                    raffleConfig.phone = data.phone || raffleConfig.phone;
+                    raffleConfig.cedula = data.cedula || raffleConfig.cedula;
+                    raffleConfig.whatsapp = data.whatsapp || raffleConfig.whatsapp || raffleConfig.phone;
+                    if (data.img1) raffleConfig.img1 = data.img1;
+                    if (data.img2) raffleConfig.img2 = data.img2;
+                    if (data.img3) raffleConfig.img3 = data.img3;
+                    actualizarUIConfiguracion();
+                }
+            } catch (err) {}
+        }
+
+        function actualizarUIConfiguracion() {
+            document.getElementById('displayTitle').innerText = raffleConfig.title;
+            document.getElementById('ticketTitleModal').innerText = raffleConfig.title;
+            document.getElementById('raffleDescription').innerText = raffleConfig.description;
+            document.getElementById('raffleMethodDisplay').innerText = raffleConfig.method;
+            
+            const priceFormatted = raffleConfig.price.toFixed(2);
+            const bcvFormatted = raffleConfig.bcvRate.toLocaleString('es-VE', {minimumFractionDigits: 2});
+            const priceInBs = (raffleConfig.price * raffleConfig.bcvRate).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+            document.getElementById('ticketPriceUsdDisplay').innerText = priceFormatted;
+            document.getElementById('bcvRateDisplay').innerText = bcvFormatted;
+            document.getElementById('bigPriceUsd').innerText = priceFormatted;
+            document.getElementById('bigPriceBs').innerText = priceInBs;
+
+            document.getElementById('pmBank').innerText = raffleConfig.bank;
+            document.getElementById('pmPhone').innerText = raffleConfig.phone;
+            document.getElementById('pmCedula').innerText = raffleConfig.cedula;
+
+            if (document.getElementById('imgPrize1')) document.getElementById('imgPrize1').src = raffleConfig.img1;
+            if (document.getElementById('imgPrize2')) document.getElementById('imgPrize2').src = raffleConfig.img2;
+            if (document.getElementById('imgPrize3')) document.getElementById('imgPrize3').src = raffleConfig.img3;
+        }
+
+        async function cargarEstadoNumeros() {
+            if (!_supabase) return;
+            try {
+                const { data, error } = await _supabase.from('raffle_numbers').select('*');
+                if (error) return;
+
+                numbersData = {};
+                let countSold = 0;
+                let countPending = 0;
+
+                if (data) {
+                    data.forEach(item => {
+                        numbersData[item.number] = item;
+                        if (item.status === 'sold') countSold++;
+                        if (item.status === 'pending') countPending++;
+                    });
+                }
+
+                for (let i = 0; i < 100; i++) {
+                    const numStr = i.toString().padStart(2, '0');
+                    const btn = document.getElementById(`btn-num-${numStr}`);
+                    if (!btn) continue;
+
+                    const item = numbersData[numStr];
+                    const status = item ? item.status : 'available';
+
+                    if (status === 'sold') {
+                        btn.className = 'h-12 sm:h-14 bg-rose-600/90 text-white font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-rose-600/20 border border-rose-500 flex items-center justify-center';
+                        btn.disabled = true;
+                    } else if (status === 'pending') {
+                        btn.className = 'h-12 sm:h-14 bg-amber-600/90 text-slate-950 font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-amber-600/20 border border-amber-500 flex items-center justify-center opacity-90 animate-pulse';
+                        btn.disabled = true;
+                    } else {
+                        btn.disabled = false;
+                        if (selectedNumbers.includes(numStr)) {
+                            btn.className = 'h-12 sm:h-14 bg-amber-400 text-slate-950 font-mono font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-amber-500/40 scale-105 border-2 border-amber-100 flex items-center justify-center cursor-pointer';
+                        } else {
+                            btn.className = 'h-12 sm:h-14 bg-[#131b2e] border border-slate-800 rounded-2xl font-mono font-bold text-sm sm:text-base text-slate-200 hover:border-amber-400/80 transition-all hover:scale-105 flex items-center justify-center shadow-lg cursor-pointer';
+                        }
+                    }
+                }
+
+                const countAvailable = 100 - (countSold + countPending);
+                document.getElementById('progressBarSold').style.width = `${countSold}%`;
+                document.getElementById('progressBarPending').style.width = `${countPending}%`;
+                document.getElementById('progressText').innerText = `${countSold}%`;
+
+                document.getElementById('countAvailableText').innerText = countAvailable;
+                document.getElementById('countPendingText').innerText = countPending;
+                document.getElementById('countSoldText').innerText = countSold;
+
+                if (isAdminLoggedIn) renderAdminTable();
+            } catch (err) {}
+        }
+
+        function toggleSelectNumber(numStr) {
+            const item = numbersData[numStr];
+            const status = item ? item.status : 'available';
+            if (status === 'sold' || status === 'pending') return;
+
+            const index = selectedNumbers.indexOf(numStr);
+            if (index > -1) { selectedNumbers.splice(index, 1); }
+            else { selectedNumbers.push(numStr); }
+
+            actualizarBarraFlotante();
+            cargarEstadoNumeros();
+        }
+
+        function seleccionarAzar(cantidad) {
+            let disponibles = [];
+            for (let i = 0; i < 100; i++) {
+                const numStr = i.toString().padStart(2, '0');
+                const item = numbersData[numStr];
+                if ((!item || item.status === 'available') && !selectedNumbers.includes(numStr)) {
+                    disponibles.push(numStr);
+                }
+            }
+
+            if (disponibles.length === 0) { alert("No hay boletos suficientes disponibles."); return; }
+
+            for (let k = 0; k < cantidad; k++) {
+                if (disponibles.length === 0) break;
+                const randomIndex = Math.floor(Math.random() * disponibles.length);
+                selectedNumbers.push(disponibles.splice(randomIndex, 1)[0]);
+            }
+            actualizarBarraFlotante();
+            cargarEstadoNumeros();
+        }
+
+        function limpiarSeleccion() {
+            selectedNumbers = [];
+            actualizarBarraFlotante();
+            cargarEstadoNumeros();
+        }
+
+        function actualizarBarraFlotante() {
+            const bar = document.getElementById('purchaseBar');
+            if (selectedNumbers.length > 0) {
+                bar.classList.remove('translate-y-full');
+                document.getElementById('selectedListText').innerText = selectedNumbers.join(', ');
+                const totalUsd = selectedNumbers.length * raffleConfig.price;
+                const totalBs = totalUsd * raffleConfig.bcvRate;
+                document.getElementById('totalUsdText').innerText = `$${totalUsd.toFixed(2)} USD`;
+                document.getElementById('totalBsvText').innerText = `${totalBs.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2})} Bs`;
+            } else {
+                bar.classList.add('translate-y-full');
+            }
+        }
+
+        function toggleMetodoPagoUI() {
+            const metodo = document.getElementById('selectMetodoPago').value;
+            const boxPM = document.getElementById('boxPagoMovilData');
+            const boxEfectivo = document.getElementById('boxEfectivoData');
+            const inputRef = document.getElementById('inputReferencia');
+
+            if (metodo === 'efectivo') {
+                boxPM.classList.add('hidden');
+                boxEfectivo.classList.remove('hidden');
+                inputRef.value = 'PAGO EN EFECTIVO';
+                inputRef.required = false;
+            } else {
+                boxPM.classList.remove('hidden');
+                boxEfectivo.classList.add('hidden');
+                inputRef.value = '';
+                inputRef.required = true;
+            }
+        }
+
+        function consultarBoleto() {
+            const query = document.getElementById('searchTicketInput').value.trim().toLowerCase();
+            const box = document.getElementById('searchResultBox');
+            if (!query) { box.classList.add('hidden'); return; }
+
+            let found = [];
+            for (let i = 0; i < 100; i++) {
+                const numStr = i.toString().padStart(2, '0');
+                const item = numbersData[numStr];
+                if (item) {
+                    if (item.number === query || (item.ci && item.ci.toLowerCase().includes(query))) {
+                        found.push(item);
+                    }
+                }
+            }
+
+            box.classList.remove('hidden');
+            if (found.length === 0) {
+                box.className = "text-xs p-3.5 rounded-2xl border bg-[#070a12] border-slate-800 text-slate-400";
+                box.innerHTML = `No se registran boletos para <strong>"${query}"</strong>.`;
+            } else {
+                let html = '<div class="space-y-2">';
+                found.forEach(f => {
+                    let badge = f.status === 'sold' ? '<span class="text-emerald-400 font-bold">🟢 CONFIRMADO Y PAGADO</span>' :
+                                '<span class="text-amber-400 font-bold">🟡 EN VERIFICACIÓN (PAGO PENDIENTE)</span>';
+                    
+                    let downloadBtn = '';
+                    if (f.status === 'sold') {
+                        downloadBtn = `<button onclick='abrirTicketOficial(${JSON.stringify(f)})' class="mt-2 w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow">
+                            <i class="fa-solid fa-ticket"></i> Ver y Descargar Ticket Oficial
+                        </button>`;
+                    } else {
+                        downloadBtn = `<p class="text-[10px] text-slate-400 italic mt-1">El ticket oficial y descargable se emitirá en cuanto el administrador confirme tu pago.</p>`;
+                    }
+
+                    html += `<div class="bg-[#131b2e] p-3.5 rounded-xl border border-slate-800 space-y-1">
+                        <div class="flex justify-between font-bold"><span>Boleto #${f.number}</span> ${badge}</div>
+                        <div class="text-[11px] text-slate-300">Comprador: ${f.name} (CI: ${f.ci})</div>
+                        <div class="text-[10px] text-amber-400/80 font-mono">Ref/Método: ${f.reference}</div>
+                        ${downloadBtn}
+                    </div>`;
+                });
+                html += '</div>';
+                box.className = "text-xs p-3.5 rounded-2xl border bg-[#070a12] border-amber-500/30 text-slate-200";
+                box.innerHTML = html;
+            }
+        }
+
+        function abrirModalPago() {
+            document.getElementById('inputNumero').value = selectedNumbers.join(', ');
+            document.getElementById('modalPago').classList.remove('hidden');
+        }
+
+        function cerrarModalPago() { document.getElementById('modalPago').classList.add('hidden'); }
+
+        async function procesarPago(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('btnSubmit');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Enviando Reporte...`;
+            }
+
+            const metodo = document.getElementById('selectMetodoPago').value;
+            const cedula = document.getElementById('inputCedula').value.trim();
+            const nombre = document.getElementById('inputNombre').value.trim();
+            const telefono = document.getElementById('inputTelefono').value.trim();
+            let referencia = document.getElementById('inputReferencia').value.trim();
+            if (metodo === 'efectivo' && !referencia) referencia = 'EFECTIVO';
+
+            const fileInput = document.getElementById('inputCapture');
+            let captureUrl = '';
+
+            if (_supabase && fileInput && fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${selectedNumbers.join('-')}.${fileExt}`;
+
+                const { data: uploadData, error: uploadError } = await _supabase.storage
+                    .from('captures')
+                    .upload(fileName, file);
+
+                if (!uploadError) {
+                    const { data: publicURLData } = _supabase.storage
+                        .from('captures')
+                        .getPublicUrl(fileName);
+                    captureUrl = publicURLData.publicUrl;
+                }
+            }
+
+            if (_supabase) {
+                for (const num of selectedNumbers) {
+                    await _supabase
+                        .from('raffle_numbers')
+                        .upsert({
+                            number: num,
+                            status: 'pending',
+                            name: nombre,
+                            ci: cedula,
+                            phone: telefono,
+                            reference: referencia,
+                            capture_url: captureUrl
+                        }, { onConflict: ['number'] });
+                }
+            }
+
+            // ENVIAR NOTIFICACIÓN AUTOMÁTICA A WHATSAPP
+            const numWa = raffleConfig.whatsapp || raffleConfig.phone;
+            const waFormat = "58" + numWa.replace(/\D/g, ''); 
+
+            let msg = `¡Hola! 👋 He reportado el pago de mi(s) boleto(s) para *${raffleConfig.title}*:\n\n` +
+                `🔢 *Boleto(s):* ${selectedNumbers.join(', ')}\n` +
+                `👤 *Nombre:* ${nombre}\n` +
+                `🆔 *Cédula:* ${cedula}\n` +
+                `📱 *Teléfono:* ${telefono}\n` +
+                `💳 *Método/Ref:* ${referencia}\n`;
+
+            if (captureUrl) {
+                msg += `📸 *Comprobante:* ${captureUrl}\n`;
+            }
+
+            msg += `\nQuedo a la espera de la verificación de mi pago. ¡Muchas gracias!`;
+
+            // Abrir WhatsApp en una nueva pestaña
+            window.open(`https://wa.me/${waFormat}?text=${encodeURIComponent(msg)}`, '_blank');
+
+            cerrarModalPago();
+            mostrarToast("¡Reporte de pago guardado y enviado a WhatsApp!");
+
+            selectedNumbers = [];
+            actualizarBarraFlotante();
+            cargarEstadoNumeros();
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-brands fa-whatsapp text-base"></i> Enviar Reporte de Pago por WhatsApp`;
+            }
+        }
+
+        function abrirTicketOficial(item) {
+            ultimoTicket = {
+                code: `TCK-${item.number}-${Math.floor(100 + Math.random() * 900)}`,
+                nombre: item.name,
+                cedula: item.ci,
+                numeros: item.number,
+                referencia: item.reference
+            };
+
+            document.getElementById('ticketCodeDisplay').innerText = ultimoTicket.code;
+            document.getElementById('tktNombre').innerText = ultimoTicket.nombre;
+            document.getElementById('tktCedula').innerText = ultimoTicket.cedula;
+            document.getElementById('tktNumeros').innerText = ultimoTicket.numeros;
+            document.getElementById('tktRef').innerText = ultimoTicket.referencia;
+
+            document.getElementById('modalTicket').classList.remove('hidden');
+        }
+
+        function cerrarModalTicket() { document.getElementById('modalTicket').classList.add('hidden'); }
+
+        function descargarTicketImagen() {
+            const ticketElement = document.getElementById('ticketCaptureArea');
+            if (!ticketElement) return;
+
+            mostrarToast("Generando imagen del ticket oficial...");
+
+            html2canvas(ticketElement, { backgroundColor: '#0b101d', scale: 2 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `TicketOficial_${ultimoTicket ? ultimoTicket.code : 'Rifa'}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                mostrarToast("¡Ticket descargado con éxito!");
+            }).catch(err => {
+                alert("Error al generar la imagen.");
+            });
+        }
+
+        // --- ADMIN ---
+        function openAdminModal() { document.getElementById('modalAdmin').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('modalAdmin').classList.add('hidden'); }
+
+        function loginAdmin() {
+            if (document.getElementById('adminPassInput').value === '1234') { 
+                isAdminLoggedIn = true;
+                document.getElementById('adminAuthSection').classList.add('hidden');
+                document.getElementById('adminContentSection').classList.remove('hidden');
+
+                document.getElementById('adminTitleInput').value = raffleConfig.title;
+                document.getElementById('adminDescInput').value = raffleConfig.description;
+                document.getElementById('adminMethodInput').value = raffleConfig.method;
+                document.getElementById('adminPriceInput').value = raffleConfig.price;
+                document.getElementById('adminBcvInput').value = raffleConfig.bcvRate;
+                document.getElementById('adminBankInput').value = raffleConfig.bank;
+                document.getElementById('adminPhoneInput').value = raffleConfig.phone;
+                document.getElementById('adminCedulaInput').value = raffleConfig.cedula;
+                document.getElementById('adminWhatsappInput').value = raffleConfig.whatsapp || raffleConfig.phone;
+
+                document.getElementById('adminImg1').value = raffleConfig.img1;
+                document.getElementById('adminImg2').value = raffleConfig.img2;
+                document.getElementById('adminImg3').value = raffleConfig.img3;
+
+                renderAdminTable();
+            } else { alert("Clave incorrecta."); }
+        }
+
+        async function registrarVentaEfectivoAdmin() {
+            const num = document.getElementById('adminCashNum').value.trim().padStart(2, '0');
+            const name = document.getElementById('adminCashName').value.trim();
+            const ci = document.getElementById('adminCashCi').value.trim();
+
+            if (!num || !name || !ci) { alert("Por favor indica el número, nombre y cédula."); return; }
+
+            if (_supabase) {
+                await _supabase.from('raffle_numbers').upsert({
+                    number: num,
+                    status: 'sold',
+                    name: name,
+                    ci: ci,
+                    phone: 'EFECTIVO',
+                    reference: 'PAGO EFECTIVO DIRECTO',
+                    capture_url: ''
+                }, { onConflict: ['number'] });
+            }
+
+            document.getElementById('adminCashNum').value = '';
+            document.getElementById('adminCashName').value = '';
+            document.getElementById('adminCashCi').value = '';
+
+            mostrarToast(`¡Boleto #${num} registrado como PAGADO y CONFIRMADO con éxito!`);
+            cargarEstadoNumeros();
+        }
+
+        async function subirImagenSupabase(fileInput) {
+            if (!_supabase || !fileInput || !fileInput.files.length) return null;
+            try {
+                const file = fileInput.files[0];
+                const fileName = `prize_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+                const { data, error } = await _supabase.storage.from('captures').upload(fileName, file);
+                if (!error) {
+                    const { data: publicURLData } = _supabase.storage.from('captures').getPublicUrl(fileName);
+                    return publicURLData.publicUrl;
+                }
+            } catch(e) {}
+            return null;
+        }
+
+        async function guardarAjustesAdmin() {
+            const btn = document.getElementById('btnSaveAdmin');
+            if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando Ajustes...`; }
+
+            let url1 = await subirImagenSupabase(document.getElementById('filePrize1')) || document.getElementById('adminImg1').value.trim() || raffleConfig.img1;
+            let url2 = await subirImagenSupabase(document.getElementById('filePrize2')) || document.getElementById('adminImg2').value.trim() || raffleConfig.img2;
+            let url3 = await subirImagenSupabase(document.getElementById('filePrize3')) || document.getElementById('adminImg3').value.trim() || raffleConfig.img3;
+
+            raffleConfig.title = document.getElementById('adminTitleInput').value;
+            raffleConfig.description = document.getElementById('adminDescInput').value;
+            raffleConfig.method = document.getElementById('adminMethodInput').value;
+            raffleConfig.price = parseFloat(document.getElementById('adminPriceInput').value) || 2.00;
+            raffleConfig.bcvRate = parseFloat(document.getElementById('adminBcvInput').value) || 881.06;
+            raffleConfig.bank = document.getElementById('adminBankInput').value;
+            raffleConfig.phone = document.getElementById('adminPhoneInput').value;
+            raffleConfig.cedula = document.getElementById('adminCedulaInput').value;
+            raffleConfig.whatsapp = document.getElementById('adminWhatsappInput').value;
+            raffleConfig.img1 = url1; raffleConfig.img2 = url2; raffleConfig.img3 = url3;
+
+            if (_supabase) {
+                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, bcv_rate: raffleConfig.bcvRate });
+            }
+
+            actualizarUIConfiguracion();
+            if (btn) { btn.disabled = false; btn.innerHTML = `Guardar Ajustes de la Rifa`; }
+
+            closeAdminModal();
+            mostrarToast("¡Ajustes actualizados con éxito!");
+        }
+
+        function renderAdminTable() {
+            const tbody = document.getElementById('adminTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            for (let i = 0; i < 100; i++) {
+                const numStr = i.toString().padStart(2, '0');
+                const item = numbersData[numStr] || { number: numStr, status: 'available', name: '-', ci: '-', reference: '-', capture_url: '' };
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800/80 hover:bg-slate-800/40';
+
+                let captureCell = '-';
+                if (item.capture_url) {
+                    captureCell = `<a href="${item.capture_url}" target="_blank" class="text-amber-400 font-bold hover:underline"><i class="fa-solid fa-image"></i> Ver Foto</a>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="p-2 font-bold font-mono text-amber-400">${item.number}</td>
+                    <td class="p-2">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${item.status === 'sold' ? 'bg-emerald-500/20 text-emerald-400' : item.status === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'bg-slate-800 text-slate-400'}">
+                            ${item.status === 'sold' ? 'PAGADO' : item.status === 'pending' ? 'PENDIENTE' : 'LIBRE'}
+                        </span>
+                    </td>
+                    <td class="p-2">${item.name || '-'}</td>
+                    <td class="p-2">${item.ci || '-'}</td>
+                    <td class="p-2 font-mono">${item.reference || '-'}</td>
+                    <td class="p-2">${captureCell}</td>
+                    <td class="p-2">
+                        <select onchange="cambiarEstadoAdmin('${item.number}', this.value)" class="bg-[#070a12] border border-slate-800 text-slate-200 rounded p-1 text-[11px]">
+                            <option value="available" ${item.status === 'available' ? 'selected' : ''}>Libre</option>
+                            <option value="pending" ${item.status === 'pending' ? 'selected' : ''}>Pendiente</option>
+                            <option value="sold" ${item.status === 'sold' ? 'selected' : ''}>Pagado (Confirmar)</option>
+                        </select>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        async function cambiarEstadoAdmin(numberStr, newStatus) {
+            if (!_supabase) return;
+            if (newStatus === 'available') {
+                await _supabase.from('raffle_numbers').delete().eq('number', numberStr);
+            } else {
+                const currentItem = numbersData[numberStr] || {};
+                await _supabase.from('raffle_numbers').upsert({
+                    number: numberStr,
+                    status: newStatus,
+                    name: currentItem.name || 'Admin',
+                    ci: currentItem.ci || 'V-00000000',
+                    phone: currentItem.phone || '0000000000',
+                    reference: currentItem.reference || 'VERIFICADO',
+                    capture_url: currentItem.capture_url || ''
+                }, { onConflict: ['number'] });
+            }
+            mostrarToast(`¡Estado del boleto #${numberStr} actualizado a ${newStatus === 'sold' ? 'PAGADO/CONFIRMADO' : newStatus.toUpperCase()}!`);
+            cargarEstadoNumeros();
+        }
+    </script>
+</body>
+</html>
