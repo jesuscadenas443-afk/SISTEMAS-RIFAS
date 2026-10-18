@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -519,7 +520,7 @@
     <!-- SCRIPT -->
     <script>
         const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
-        const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
+        const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow0iwD0pzDPUwA_gYNMa_';
 
         let _supabase = null;
         let selectedNumbers = [];
@@ -577,12 +578,54 @@
         window.addEventListener('DOMContentLoaded', () => {
             renderGridInmediato();
             if (window.supabase) {
-                try { _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+                try { 
+                    _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    suscripcionTiempoReal();
+                } catch(e) {}
             }
             actualizarUIConfiguracion();
             cargarConfiguracion();
             cargarEstadoNumeros();
         });
+
+        // ==========================================
+        // 🔄 ACTUALIZACIÓN EN TIEMPO REAL (REALTIME)
+        // ==========================================
+        function suscripcionTiempoReal() {
+            if (!_supabase) return;
+
+            // Escuchar cambios en la tabla de números
+            _supabase
+                .channel('public:raffle_numbers')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_numbers' }, payload => {
+                    cargarEstadoNumeros();
+                })
+                .subscribe();
+
+            // Escuchar cambios en la configuración (por si cambia el ganador o ajustes)
+            _supabase
+                .channel('public:raffle_config')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_config' }, payload => {
+                    if (payload.new) {
+                        raffleConfig.title = payload.new.title || raffleConfig.title;
+                        raffleConfig.description = payload.new.description || raffleConfig.description;
+                        raffleConfig.method = payload.new.method || raffleConfig.method;
+                        raffleConfig.price = parseFloat(payload.new.price) || raffleConfig.price;
+                        raffleConfig.bcvRate = parseFloat(payload.new.bcv_rate) || raffleConfig.bcvRate;
+                        raffleConfig.bank = payload.new.bank || raffleConfig.bank;
+                        raffleConfig.phone = payload.new.phone || raffleConfig.phone;
+                        raffleConfig.cedula = payload.new.cedula || raffleConfig.cedula;
+                        raffleConfig.whatsapp = payload.new.whatsapp || raffleConfig.whatsapp || raffleConfig.phone;
+                        raffleConfig.winner_number = payload.new.winner_number || "";
+                        if (payload.new.img1) raffleConfig.img1 = payload.new.img1;
+                        if (payload.new.img2) raffleConfig.img2 = payload.new.img2;
+                        if (payload.new.img3) raffleConfig.img3 = payload.new.img3;
+                        actualizarUIConfiguracion();
+                        cargarEstadoNumeros();
+                    }
+                })
+                .subscribe();
+        }
 
         async function cargarConfiguracion() {
             if (!_supabase) return;
@@ -1035,7 +1078,6 @@
             raffleConfig.winner_number = "";
             document.getElementById('adminWinnerNumInput').value = "";
 
-            // LIMPIAR BÚSQUEDA PÚBLICA EN PANTALLA
             const searchInput = document.getElementById('searchTicketInput');
             const searchBox = document.getElementById('searchResultBox');
             if (searchInput) searchInput.value = "";
@@ -1045,9 +1087,7 @@
             }
 
             if (_supabase) {
-                // Borrar todos los boletos registrados en la BD
                 await _supabase.from('raffle_numbers').delete().neq('number', 'XX');
-                // Limpiar el ganador en la configuración
                 await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, winner_number: "", bcv_rate: raffleConfig.bcvRate });
             }
 
