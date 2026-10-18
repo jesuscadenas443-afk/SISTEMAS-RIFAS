@@ -103,6 +103,19 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <div class="max-w-6xl mx-auto w-full px-4 pt-6 space-y-6">
 
+        <!-- BANNER DE GANADOR -->
+        <div id="winnerPublicBanner" class="hidden relative bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 p-6 rounded-3xl shadow-2xl border-2 border-yellow-200 text-center space-y-2 animate-bounce">
+            <span class="bg-slate-950 text-amber-400 font-black text-[10px] px-3 py-1 rounded-full uppercase tracking-widest">
+                🏆 ¡TENEMOS GANADOR OFICIAL DEL SORTEO! 🏆
+            </span>
+            <h2 class="text-2xl sm:text-3xl font-black uppercase tracking-tight">
+                ¡BOLETO GANADOR: <span id="winnerNumberBanner" class="bg-slate-950 text-yellow-300 font-mono px-4 py-1 rounded-2xl">#00</span>!
+            </h2>
+            <p class="text-xs sm:text-sm font-bold text-slate-900">
+                Sorteo finalizado. Consulta la lista o tu ticket ingresando tu cédula abajo.
+            </p>
+        </div>
+
         <!-- BANNER PRINCIPAL + METODOLOGÍA -->
         <div class="relative bg-gradient-to-br from-[#131b2e] via-[#0b101d] to-amber-950/30 border border-amber-500/30 p-6 sm:p-8 rounded-3xl shadow-2xl overflow-hidden glow-dynamic">
             <div class="absolute -right-16 -bottom-16 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -203,7 +216,7 @@
         </div>
 
         <!-- MÓDULO SELECCIÓN RÁPIDA -->
-        <div class="glass-card p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 border-amber-500/20">
+        <div id="boxQuickSelect" class="glass-card p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-center justify-between gap-4 border-amber-500/20">
             <div class="space-y-1 text-center sm:text-left">
                 <h3 class="text-sm font-bold text-slate-200 flex items-center justify-center sm:justify-start gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> Selección Rápida al Azar
@@ -337,7 +350,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE TICKET OFICIAL DESCARGABLE (SOLO SE ABRE CUANDO EL PAGO ESTÁ CONFIRMADO) -->
+    <!-- MODAL DE TICKET OFICIAL DESCARGABLE -->
     <div id="modalTicket" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="glass-modal rounded-3xl p-6 max-w-sm w-full shadow-2xl relative space-y-4 text-center">
             <button onclick="cerrarModalTicket()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-100 text-xl"><i class="fa-solid fa-xmark"></i></button>
@@ -376,7 +389,7 @@
 
     <!-- MODAL DE ADMINISTRACIÓN -->
     <div id="modalAdmin" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
-        <div class="glass-modal rounded-3xl p-6 sm:p-7 max-w-4xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
+        <div class="glass-modal rounded-3xl p-6 sm:p-7 max-w-5xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <button onclick="closeAdminModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-100 text-xl"><i class="fa-solid fa-xmark"></i></button>
             <h2 class="text-lg font-black text-amber-400 mb-4 flex items-center gap-2">
                 <i class="fa-solid fa-user-gear"></i> Panel de Administración del Sorteo
@@ -390,6 +403,29 @@
 
             <div id="adminContentSection" class="hidden space-y-6">
                 
+                <!-- PUBLICAR GANADOR DE LA RIFA Y REINICIO -->
+                <div class="bg-gradient-to-r from-amber-950/40 via-[#070a12] to-yellow-950/30 p-4 sm:p-5 rounded-3xl border border-amber-500/50 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+                        <h3 class="font-bold text-xs text-amber-400 flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-yellow-400"></i> Publicar y Notificar Boleto Ganador
+                        </h3>
+                        <button onclick="reiniciarRifaTotal()" class="bg-rose-600 hover:bg-rose-500 text-white font-extrabold px-3 py-1.5 rounded-xl text-[10px] uppercase flex items-center gap-1.5 shadow transition">
+                            <i class="fa-solid fa-rotate-left"></i> Reiniciar Rifa
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                        <input type="text" id="adminWinnerNumInput" placeholder="Nº Ganador (Ej: 07)" class="bg-slate-900 border border-amber-500/40 rounded-xl p-2.5 text-amber-300 font-mono font-bold">
+                        <button onclick="publicarGanadorAdmin()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2.5 rounded-xl transition uppercase text-[11px] shadow">
+                            Guardar y Mostrar Ganador
+                        </button>
+                        <button id="btnNotificarGanadorWA" onclick="notificarGanadorWA()" disabled class="bg-slate-800 text-slate-500 font-extrabold px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 cursor-not-allowed">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> Notificar Ganador por WhatsApp
+                        </button>
+                    </div>
+                    <p id="winnerAdminStatus" class="text-[11px] text-slate-400 font-mono"></p>
+                </div>
+
                 <!-- REGISTRO VENTA EFECTIVO -->
                 <div class="bg-gradient-to-r from-emerald-950/40 via-[#070a12] to-slate-900 p-4 sm:p-5 rounded-3xl border border-emerald-500/30 space-y-3">
                     <h3 class="font-bold text-xs text-emerald-400 border-b border-slate-800 pb-2 flex items-center gap-2">
@@ -468,7 +504,8 @@
                                     <th class="p-2">Cédula</th>
                                     <th class="p-2">Ref / Método</th>
                                     <th class="p-2">Capture</th>
-                                    <th class="p-2">Acción</th>
+                                    <th class="p-2">Cambiar Estado</th>
+                                    <th class="p-2 text-center">Notificar</th>
                                 </tr>
                             </thead>
                             <tbody id="adminTableBody"></tbody>
@@ -499,6 +536,7 @@
             phone: "04125668044",
             cedula: "V-30668946",
             whatsapp: "04125668044",
+            winner_number: "",
             img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
             img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80",
             img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80"
@@ -560,6 +598,7 @@
                     raffleConfig.phone = data.phone || raffleConfig.phone;
                     raffleConfig.cedula = data.cedula || raffleConfig.cedula;
                     raffleConfig.whatsapp = data.whatsapp || raffleConfig.whatsapp || raffleConfig.phone;
+                    raffleConfig.winner_number = data.winner_number || "";
                     if (data.img1) raffleConfig.img1 = data.img1;
                     if (data.img2) raffleConfig.img2 = data.img2;
                     if (data.img3) raffleConfig.img3 = data.img3;
@@ -590,6 +629,18 @@
             if (document.getElementById('imgPrize1')) document.getElementById('imgPrize1').src = raffleConfig.img1;
             if (document.getElementById('imgPrize2')) document.getElementById('imgPrize2').src = raffleConfig.img2;
             if (document.getElementById('imgPrize3')) document.getElementById('imgPrize3').src = raffleConfig.img3;
+
+            actualizarBannerGanadorPublico();
+        }
+
+        function actualizarBannerGanadorPublico() {
+            const winnerBanner = document.getElementById('winnerPublicBanner');
+            if (raffleConfig.winner_number) {
+                document.getElementById('winnerNumberBanner').innerText = `#${raffleConfig.winner_number}`;
+                winnerBanner.classList.remove('hidden');
+            } else {
+                winnerBanner.classList.add('hidden');
+            }
         }
 
         async function cargarEstadoNumeros() {
@@ -610,6 +661,15 @@
                     });
                 }
 
+                const hayGanador = Boolean(raffleConfig.winner_number);
+                const quickSelectBox = document.getElementById('boxQuickSelect');
+
+                if (hayGanador && quickSelectBox) {
+                    quickSelectBox.classList.add('opacity-50', 'pointer-events-none');
+                } else if (quickSelectBox) {
+                    quickSelectBox.classList.remove('opacity-50', 'pointer-events-none');
+                }
+
                 for (let i = 0; i < 100; i++) {
                     const numStr = i.toString().padStart(2, '0');
                     const btn = document.getElementById(`btn-num-${numStr}`);
@@ -618,18 +678,29 @@
                     const item = numbersData[numStr];
                     const status = item ? item.status : 'available';
 
-                    if (status === 'sold') {
-                        btn.className = 'h-12 sm:h-14 bg-rose-600/90 text-white font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-rose-600/20 border border-rose-500 flex items-center justify-center';
-                        btn.disabled = true;
-                    } else if (status === 'pending') {
-                        btn.className = 'h-12 sm:h-14 bg-amber-600/90 text-slate-950 font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-amber-600/20 border border-amber-500 flex items-center justify-center opacity-90 animate-pulse';
+                    if (hayGanador) {
+                        if (numStr === raffleConfig.winner_number) {
+                            btn.className = 'h-12 sm:h-14 bg-amber-400 text-slate-950 font-mono font-black text-base sm:text-lg rounded-2xl border-4 border-yellow-200 animate-bounce flex items-center justify-center shadow-2xl';
+                            btn.innerText = `🏆 ${numStr}`;
+                        } else {
+                            btn.className = 'h-12 sm:h-14 bg-[#0a0f1d] text-slate-600 border border-slate-900 rounded-2xl font-mono text-sm sm:text-base flex items-center justify-center cursor-not-allowed opacity-50';
+                        }
                         btn.disabled = true;
                     } else {
-                        btn.disabled = false;
-                        if (selectedNumbers.includes(numStr)) {
-                            btn.className = 'h-12 sm:h-14 bg-amber-400 text-slate-950 font-mono font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-amber-500/40 scale-105 border-2 border-amber-100 flex items-center justify-center cursor-pointer';
+                        btn.innerText = numStr;
+                        if (status === 'sold') {
+                            btn.className = 'h-12 sm:h-14 bg-rose-600/90 text-white font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-rose-600/20 border border-rose-500 flex items-center justify-center';
+                            btn.disabled = true;
+                        } else if (status === 'pending') {
+                            btn.className = 'h-12 sm:h-14 bg-amber-600/90 text-slate-950 font-mono font-bold text-sm sm:text-base rounded-2xl cursor-not-allowed shadow-lg shadow-amber-600/20 border border-amber-500 flex items-center justify-center opacity-90 animate-pulse';
+                            btn.disabled = true;
                         } else {
-                            btn.className = 'h-12 sm:h-14 bg-[#131b2e] border border-slate-800 rounded-2xl font-mono font-bold text-sm sm:text-base text-slate-200 hover:border-amber-400/80 transition-all hover:scale-105 flex items-center justify-center shadow-lg cursor-pointer';
+                            btn.disabled = false;
+                            if (selectedNumbers.includes(numStr)) {
+                                btn.className = 'h-12 sm:h-14 bg-amber-400 text-slate-950 font-mono font-black text-sm sm:text-base rounded-2xl shadow-xl shadow-amber-500/40 scale-105 border-2 border-amber-100 flex items-center justify-center cursor-pointer';
+                            } else {
+                                btn.className = 'h-12 sm:h-14 bg-[#131b2e] border border-slate-800 rounded-2xl font-mono font-bold text-sm sm:text-base text-slate-200 hover:border-amber-400/80 transition-all hover:scale-105 flex items-center justify-center shadow-lg cursor-pointer';
+                            }
                         }
                     }
                 }
@@ -643,11 +714,18 @@
                 document.getElementById('countPendingText').innerText = countPending;
                 document.getElementById('countSoldText').innerText = countSold;
 
+                actualizarBannerGanadorPublico();
+
                 if (isAdminLoggedIn) renderAdminTable();
             } catch (err) {}
         }
 
         function toggleSelectNumber(numStr) {
+            if (raffleConfig.winner_number) {
+                mostrarToast("El sorteo ya ha finalizado. No se permiten más compras.");
+                return;
+            }
+
             const item = numbersData[numStr];
             const status = item ? item.status : 'available';
             if (status === 'sold' || status === 'pending') return;
@@ -661,6 +739,11 @@
         }
 
         function seleccionarAzar(cantidad) {
+            if (raffleConfig.winner_number) {
+                mostrarToast("El sorteo ya ha finalizado.");
+                return;
+            }
+
             let disponibles = [];
             for (let i = 0; i < 100; i++) {
                 const numStr = i.toString().padStart(2, '0');
@@ -689,7 +772,7 @@
 
         function actualizarBarraFlotante() {
             const bar = document.getElementById('purchaseBar');
-            if (selectedNumbers.length > 0) {
+            if (selectedNumbers.length > 0 && !raffleConfig.winner_number) {
                 bar.classList.remove('translate-y-full');
                 document.getElementById('selectedListText').innerText = selectedNumbers.join(', ');
                 const totalUsd = selectedNumbers.length * raffleConfig.price;
@@ -769,6 +852,10 @@
         }
 
         function abrirModalPago() {
+            if (raffleConfig.winner_number) {
+                alert("El sorteo ha finalizado.");
+                return;
+            }
             document.getElementById('inputNumero').value = selectedNumbers.join(', ');
             document.getElementById('modalPago').classList.remove('hidden');
         }
@@ -827,7 +914,6 @@
                 }
             }
 
-            // ENVIAR NOTIFICACIÓN AUTOMÁTICA A WHATSAPP
             const numWa = raffleConfig.whatsapp || raffleConfig.phone;
             const waFormat = "58" + numWa.replace(/\D/g, ''); 
 
@@ -844,7 +930,6 @@
 
             msg += `\nQuedo a la espera de la verificación de mi pago. ¡Muchas gracias!`;
 
-            // Abrir WhatsApp en una nueva pestaña
             window.open(`https://wa.me/${waFormat}?text=${encodeURIComponent(msg)}`, '_blank');
 
             cerrarModalPago();
@@ -862,7 +947,7 @@
 
         function abrirTicketOficial(item) {
             ultimoTicket = {
-                code: `TCK-${item.number}-${Math.floor(100 + Math.random() * 900)}`,
+                code: `TCK-${item.number}-${(item.ci ? item.ci.replace(/\D/g, '').slice(-3) : '100')}`,
                 nombre: item.name,
                 cedula: item.ci,
                 numeros: item.number,
@@ -916,13 +1001,109 @@
                 document.getElementById('adminPhoneInput').value = raffleConfig.phone;
                 document.getElementById('adminCedulaInput').value = raffleConfig.cedula;
                 document.getElementById('adminWhatsappInput').value = raffleConfig.whatsapp || raffleConfig.phone;
+                document.getElementById('adminWinnerNumInput').value = raffleConfig.winner_number || "";
 
                 document.getElementById('adminImg1').value = raffleConfig.img1;
                 document.getElementById('adminImg2').value = raffleConfig.img2;
                 document.getElementById('adminImg3').value = raffleConfig.img3;
 
+                revisarEstadoGanadorAdmin();
                 renderAdminTable();
             } else { alert("Clave incorrecta."); }
+        }
+
+        async function publicarGanadorAdmin() {
+            const numWinner = document.getElementById('adminWinnerNumInput').value.trim().padStart(2, '0');
+            if (!numWinner) { alert("Ingresa un número de boleto."); return; }
+
+            raffleConfig.winner_number = numWinner;
+
+            if (_supabase) {
+                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, winner_number: numWinner, bcv_rate: raffleConfig.bcvRate });
+            }
+
+            revisarEstadoGanadorAdmin();
+            cargarEstadoNumeros();
+            mostrarToast(`¡Boleto #${numWinner} guardado como GANADOR de la Rifa!`);
+        }
+
+        async function reiniciarRifaTotal() {
+            if (!confirm("⚠️ ¿Estás seguro de que deseas REINICIAR la rifa? Esto liberará todos los boletos comprados y borrará el ganador actual para iniciar un nuevo sorteo.")) {
+                return;
+            }
+
+            raffleConfig.winner_number = "";
+            document.getElementById('adminWinnerNumInput').value = "";
+
+            // LIMPIAR BÚSQUEDA PÚBLICA EN PANTALLA
+            const searchInput = document.getElementById('searchTicketInput');
+            const searchBox = document.getElementById('searchResultBox');
+            if (searchInput) searchInput.value = "";
+            if (searchBox) {
+                searchBox.innerHTML = "";
+                searchBox.classList.add('hidden');
+            }
+
+            if (_supabase) {
+                // Borrar todos los boletos registrados en la BD
+                await _supabase.from('raffle_numbers').delete().neq('number', 'XX');
+                // Limpiar el ganador en la configuración
+                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, winner_number: "", bcv_rate: raffleConfig.bcvRate });
+            }
+
+            revisarEstadoGanadorAdmin();
+            cargarEstadoNumeros();
+            mostrarToast("¡Rifa reiniciada! Todos los boletos han sido liberados.");
+        }
+
+        function revisarEstadoGanadorAdmin() {
+            const numWinner = raffleConfig.winner_number;
+            const btnNotif = document.getElementById('btnNotificarGanadorWA');
+            const statusTxt = document.getElementById('winnerAdminStatus');
+
+            if (numWinner && numbersData[numWinner]) {
+                const itemWinner = numbersData[numWinner];
+                statusTxt.innerHTML = `<span class="text-amber-400 font-bold">¡Ganador actual!</span> Boleto <strong>#${numWinner}</strong> comprado por: <strong>${itemWinner.name}</strong> (CI: ${itemWinner.ci}).`;
+                btnNotif.disabled = false;
+                btnNotif.className = "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 shadow transition cursor-pointer";
+            } else if (numWinner) {
+                statusTxt.innerHTML = `<span class="text-rose-400">El boleto #${numWinner} aún no tiene comprador registrado.</span>`;
+                btnNotif.disabled = true;
+                btnNotif.className = "bg-slate-800 text-slate-500 font-extrabold px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 cursor-not-allowed";
+            } else {
+                statusTxt.innerHTML = "Ningún ganador publicado aún.";
+                btnNotif.disabled = true;
+                btnNotif.className = "bg-slate-800 text-slate-500 font-extrabold px-4 py-2.5 rounded-xl text-[11px] uppercase flex items-center justify-center gap-1.5 cursor-not-allowed";
+            }
+        }
+
+        function notificarGanadorWA() {
+            const numWinner = raffleConfig.winner_number;
+            const itemWinner = numbersData[numWinner];
+            if (!itemWinner) return;
+
+            let phone = itemWinner.phone || '';
+            if (!phone || phone === 'EFECTIVO' || phone === '-' || phone === '0000000000') {
+                phone = prompt(`Ingresa el número de WhatsApp de ${itemWinner.name}:`);
+                if (!phone) return;
+            }
+
+            let cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.startsWith('0')) cleanPhone = '58' + cleanPhone.substring(1);
+            if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
+
+            const currentUrl = window.location.href.split('#')[0];
+
+            let msgGanador = `🎉🎉 ¡¡¡FELICITACIONES *${itemWinner.name.toUpperCase()}*!!! 🎉🎉\n\n` +
+                `🏆 ¡ERES EL AFORTUNADO GANADOR DE LA *${raffleConfig.title.toUpperCase()}*! 🏆\n\n` +
+                `🎟️ *Boleto Ganador:* #${itemWinner.number}\n` +
+                `🆔 *Cédula:* ${itemWinner.ci}\n` +
+                `🎁 *Premio:* ${raffleConfig.description}\n\n` +
+                `Puedes consultar el anuncio oficial ingresando a la página web:\n` +
+                `👉 ${currentUrl}\n\n` +
+                `Nos pondremos en contacto contigo de inmediato para coordinar la entrega oficial de tu premio. ¡Felicidades! 🥳👏`;
+
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msgGanador)}`, '_blank');
         }
 
         async function registrarVentaEfectivoAdmin() {
@@ -996,6 +1177,39 @@
             mostrarToast("¡Ajustes actualizados con éxito!");
         }
 
+        function enviarWhatsappCompradorDirecto(numberStr) {
+            const item = numbersData[numberStr];
+            if (!item) { alert("No se encontraron datos del boleto."); return; }
+
+            const nombreCliente = item.name && item.name !== '-' ? item.name : 'Cliente';
+            let phone = item.phone || '';
+
+            if (!phone || phone === 'EFECTIVO' || phone === '-' || phone === '0000000000') {
+                phone = prompt(`Escribe el número de WhatsApp para notificar a ${nombreCliente} (Ej: 04121234567):`);
+                if (!phone) return;
+            }
+
+            let cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.startsWith('0')) cleanPhone = '58' + cleanPhone.substring(1);
+            if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
+
+            const currentUrl = window.location.href.split('#')[0];
+            const codigoTicket = `TCK-${item.number}-${(item.ci ? item.ci.replace(/\D/g, '').slice(-3) : '100')}`;
+
+            let textNotif = `¡Hola *${nombreCliente}*! 🎉\n\n` +
+                `Tu pago para la *${raffleConfig.title}* ha sido *VERIFICADO Y CONFIRMADO* con éxito. ✅\n\n` +
+                `🎟️ *Boleto Confirmado:* #${item.number}\n` +
+                `🆔 *Cédula:* ${item.ci || 'Registrada'}\n` +
+                `💳 *Referencia:* ${item.reference || 'Verificada'}\n` +
+                `⭐ *Código de Ticket:* ${codigoTicket}\n\n` +
+                `📲 *¿CÓMO DESCARGAR TU TICKET OFICIAL?*\n` +
+                `Puedes consultar y descargar tu Ticket Digital Oficial entrando directamente a nuestra página web e ingresando tu *número de cédula* (${item.ci}) o el *número de boleto* (#${item.number}) en el buscador:\n` +
+                `👉 ${currentUrl}\n\n` +
+                `¡Mucho éxito en el sorteo! 🍀`;
+
+            window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(textNotif)}`, '_blank');
+        }
+
         function renderAdminTable() {
             const tbody = document.getElementById('adminTableBody');
             if (!tbody) return;
@@ -1011,6 +1225,17 @@
                 let captureCell = '-';
                 if (item.capture_url) {
                     captureCell = `<a href="${item.capture_url}" target="_blank" class="text-amber-400 font-bold hover:underline"><i class="fa-solid fa-image"></i> Ver Foto</a>`;
+                }
+
+                let notifyBtn = '-';
+                if (item.status === 'sold') {
+                    notifyBtn = `<button onclick="enviarWhatsappCompradorDirecto('${item.number}')" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold px-2.5 py-1.5 rounded-xl text-[10px] uppercase flex items-center justify-center gap-1 shadow transition hover:scale-105">
+                        <i class="fa-brands fa-whatsapp text-xs"></i> WhatsApp
+                    </button>`;
+                } else if (item.status === 'pending') {
+                    notifyBtn = `<button onclick="enviarWhatsappCompradorDirecto('${item.number}')" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-2.5 py-1.5 rounded-xl text-[10px] uppercase flex items-center justify-center gap-1 shadow transition hover:scale-105">
+                        <i class="fa-brands fa-whatsapp text-xs"></i> Contactar
+                    </button>`;
                 }
 
                 tr.innerHTML = `
@@ -1031,6 +1256,7 @@
                             <option value="sold" ${item.status === 'sold' ? 'selected' : ''}>Pagado (Confirmar)</option>
                         </select>
                     </td>
+                    <td class="p-2 text-center">${notifyBtn}</td>
                 `;
                 tbody.appendChild(tr);
             }
@@ -1038,21 +1264,26 @@
 
         async function cambiarEstadoAdmin(numberStr, newStatus) {
             if (!_supabase) return;
+
+            const { data: dbItem } = await _supabase.from('raffle_numbers').select('*').eq('number', numberStr).maybeSingle();
+            const item = dbItem || numbersData[numberStr] || {};
+
             if (newStatus === 'available') {
                 await _supabase.from('raffle_numbers').delete().eq('number', numberStr);
+                mostrarToast(`Boleto #${numberStr} liberado.`);
             } else {
-                const currentItem = numbersData[numberStr] || {};
                 await _supabase.from('raffle_numbers').upsert({
                     number: numberStr,
                     status: newStatus,
-                    name: currentItem.name || 'Admin',
-                    ci: currentItem.ci || 'V-00000000',
-                    phone: currentItem.phone || '0000000000',
-                    reference: currentItem.reference || 'VERIFICADO',
-                    capture_url: currentItem.capture_url || ''
+                    name: item.name || 'Admin',
+                    ci: item.ci || 'V-00000000',
+                    phone: item.phone || '0000000000',
+                    reference: item.reference || 'VERIFICADO',
+                    capture_url: item.capture_url || ''
                 }, { onConflict: ['number'] });
+
+                mostrarToast(`¡Boleto #${numberStr} actualizado a ${newStatus === 'sold' ? 'PAGADO' : newStatus.toUpperCase()}!`);
             }
-            mostrarToast(`¡Estado del boleto #${numberStr} actualizado a ${newStatus === 'sold' ? 'PAGADO/CONFIRMADO' : newStatus.toUpperCase()}!`);
             cargarEstadoNumeros();
         }
     </script>
