@@ -574,7 +574,7 @@
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             renderGridInmediato();
             if (window.supabase) {
                 try { 
@@ -582,9 +582,9 @@
                     suscripcionTiempoReal();
                 } catch(e) {}
             }
-            actualizarUIConfiguracion();
-            cargarConfiguracion();
-            cargarEstadoNumeros();
+            // Forzar carga síncrona/directa de la configuración y estado al iniciar en cualquier dispositivo
+            await cargarConfiguracion();
+            await cargarEstadoNumeros();
         });
 
         // ==========================================
@@ -593,7 +593,6 @@
         function suscripcionTiempoReal() {
             if (!_supabase) return;
 
-            // Escuchar cambios en la tabla de números
             _supabase
                 .channel('public:raffle_numbers')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_numbers' }, payload => {
@@ -601,7 +600,6 @@
                 })
                 .subscribe();
 
-            // Escuchar cambios en la configuración (por si cambia el ganador o ajustes)
             _supabase
                 .channel('public:raffle_config')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_config' }, payload => {
