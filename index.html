@@ -112,7 +112,7 @@
                 ¡BOLETO GANADOR: <span id="winnerNumberBanner" class="bg-slate-950 text-yellow-300 font-mono px-4 py-1 rounded-2xl">#00</span>!
             </h2>
             <p class="text-xs sm:text-sm font-bold text-slate-900">
-                Sorteo finalizado. Consulta la lista o tu ticket ingresando tu cédula abajo.
+                Sorteo finalizado. Las compras han sido bloqueadas. Consulta tu boleto abajo.
             </p>
         </div>
 
@@ -236,7 +236,7 @@
                 <i class="fa-solid fa-magnifying-glass text-amber-400"></i> Consultar mis boletos y descargar ticket oficial:
             </label>
             <div class="flex gap-2.5">
-                <input type="text" id="searchTicketInput" placeholder="Ej: V-30668946 o el número 07" class="flex-1 bg-[#070a12] border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-100 outline-none focus:border-amber-400 transition font-mono">
+                <input type="text" id="searchTicketInput" placeholder="Ingresa tu Cédula (Ej: V-30668946), Código de Ticket (Ej: TCK-07-946) o Nº de Boleto (Ej: 07)" class="flex-1 bg-[#070a12] border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-100 outline-none focus:border-amber-400 transition font-mono">
                 <button onclick="consultarBoleto()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-xs transition shadow-lg shadow-amber-500/20 uppercase tracking-wide">
                     Consultar
                 </button>
@@ -365,7 +365,7 @@
                 </div>
 
                 <p class="text-[10px] text-emerald-400 uppercase tracking-widest font-black">⭐ TICKET OFICIAL CONFIRMADO ⭐</p>
-                <div class="text-lg font-black text-amber-300 font-mono tracking-widest bg-amber-500/10 py-1 rounded-xl border border-amber-500/20" id="ticketCodeDisplay">TCK-000000</div>
+                <div class="text-lg font-black text-amber-300 font-mono tracking-widest bg-amber-500/10 py-1 rounded-xl border border-amber-500/20" id="ticketCodeDisplay">TCK-00-000</div>
 
                 <div class="bg-[#070a12]/90 border border-slate-800 rounded-xl p-3 text-left text-xs space-y-1.5 font-mono">
                     <p class="border-b border-slate-800/80 pb-1 flex justify-between"><span class="text-slate-400">Comprador:</span> <strong id="tktNombre" class="text-slate-100">...</strong></p>
@@ -516,7 +516,7 @@
         </div>
     </div>
 
-    <!-- SCRIPT -->
+    <!-- SCRIPT DE REALTIME REAL Y SINCRONIZACIÓN PERSISTENTE -->
     <script>
         const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
@@ -527,6 +527,7 @@
         let ultimoTicket = null;
 
         let raffleConfig = {
+            id: 1,
             title: "Gran Rifa Digital UNERG",
             description: "Participa con el número de tu preferencia del 00 al 99. ¡Apoya nuestro proyecto de grado!",
             method: "Lotería del Táchira (Súper Gana 10:00 PM)",
@@ -543,6 +544,11 @@
         };
 
         let isAdminLoggedIn = false;
+
+        function generarCodigoTicket(num, ci) {
+            const ciClean = ci ? ci.replace(/\D/g, '').slice(-3) : '100';
+            return `TCK-${num.toString().padStart(2, '0')}-${ciClean}`;
+        }
 
         function mostrarToast(mensaje) {
             const toast = document.getElementById('toastNotification');
@@ -582,10 +588,19 @@
                     suscripcionTiempoReal();
                 } catch(e) {}
             }
-            // Forzar carga síncrona/directa de la configuración y estado al iniciar en cualquier dispositivo
+
+            await sincronizarTodo();
+
+            // MANTENER TIEMPO REAL INCLUSO SI FALLAN WEBSOCKETS (Sincronización Polling cada 3s)
+            setInterval(async () => {
+                await sincronizarTodo();
+            }, 3000);
+        });
+
+        async function sincronizarTodo() {
             await cargarConfiguracion();
             await cargarEstadoNumeros();
-        });
+        }
 
         // ==========================================
         // 🔄 ACTUALIZACIÓN EN TIEMPO REAL (REALTIME)
@@ -594,34 +609,35 @@
             if (!_supabase) return;
 
             _supabase
-                .channel('public:raffle_numbers')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_numbers' }, payload => {
+                .channel('realtime_global')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_numbers' }, () => {
                     cargarEstadoNumeros();
                 })
-                .subscribe();
-
-            _supabase
-                .channel('public:raffle_config')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_config' }, payload => {
-                    if (payload.new) {
-                        raffleConfig.title = payload.new.title || raffleConfig.title;
-                        raffleConfig.description = payload.new.description || raffleConfig.description;
-                        raffleConfig.method = payload.new.method || raffleConfig.method;
-                        raffleConfig.price = parseFloat(payload.new.price) || raffleConfig.price;
-                        raffleConfig.bcvRate = parseFloat(payload.new.bcv_rate) || raffleConfig.bcvRate;
-                        raffleConfig.bank = payload.new.bank || raffleConfig.bank;
-                        raffleConfig.phone = payload.new.phone || raffleConfig.phone;
-                        raffleConfig.cedula = payload.new.cedula || raffleConfig.cedula;
-                        raffleConfig.whatsapp = payload.new.whatsapp || raffleConfig.whatsapp || raffleConfig.phone;
-                        raffleConfig.winner_number = payload.new.winner_number || "";
-                        if (payload.new.img1) raffleConfig.img1 = payload.new.img1;
-                        if (payload.new.img2) raffleConfig.img2 = payload.new.img2;
-                        if (payload.new.img3) raffleConfig.img3 = payload.new.img3;
-                        actualizarUIConfiguracion();
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'raffle_config' }, (payload) => {
+                    if (payload && payload.new) {
+                        aplicarObjetoConfiguracion(payload.new);
                         cargarEstadoNumeros();
                     }
                 })
                 .subscribe();
+        }
+
+        function aplicarObjetoConfiguracion(data) {
+            if (!data) return;
+            raffleConfig.title = data.title || raffleConfig.title;
+            raffleConfig.description = data.description || raffleConfig.description;
+            raffleConfig.method = data.method || raffleConfig.method;
+            raffleConfig.price = parseFloat(data.price) || raffleConfig.price;
+            raffleConfig.bcvRate = parseFloat(data.bcv_rate) || raffleConfig.bcvRate;
+            raffleConfig.bank = data.bank || raffleConfig.bank;
+            raffleConfig.phone = data.phone || raffleConfig.phone;
+            raffleConfig.cedula = data.cedula || raffleConfig.cedula;
+            raffleConfig.whatsapp = data.whatsapp || data.phone || raffleConfig.whatsapp;
+            raffleConfig.winner_number = data.winner_number !== null && data.winner_number !== undefined ? data.winner_number : "";
+            if (data.img1) raffleConfig.img1 = data.img1;
+            if (data.img2) raffleConfig.img2 = data.img2;
+            if (data.img3) raffleConfig.img3 = data.img3;
+            actualizarUIConfiguracion();
         }
 
         async function cargarConfiguracion() {
@@ -629,20 +645,7 @@
             try {
                 const { data } = await _supabase.from('raffle_config').select('*').eq('id', 1).maybeSingle();
                 if (data) {
-                    raffleConfig.title = data.title || raffleConfig.title;
-                    raffleConfig.description = data.description || raffleConfig.description;
-                    raffleConfig.method = data.method || raffleConfig.method;
-                    raffleConfig.price = parseFloat(data.price) || raffleConfig.price;
-                    raffleConfig.bcvRate = parseFloat(data.bcv_rate) || raffleConfig.bcvRate;
-                    raffleConfig.bank = data.bank || raffleConfig.bank;
-                    raffleConfig.phone = data.phone || raffleConfig.phone;
-                    raffleConfig.cedula = data.cedula || raffleConfig.cedula;
-                    raffleConfig.whatsapp = data.whatsapp || raffleConfig.whatsapp || raffleConfig.phone;
-                    raffleConfig.winner_number = data.winner_number || "";
-                    if (data.img1) raffleConfig.img1 = data.img1;
-                    if (data.img2) raffleConfig.img2 = data.img2;
-                    if (data.img3) raffleConfig.img3 = data.img3;
-                    actualizarUIConfiguracion();
+                    aplicarObjetoConfiguracion(data);
                 }
             } catch (err) {}
         }
@@ -704,8 +707,10 @@
                 const hayGanador = Boolean(raffleConfig.winner_number);
                 const quickSelectBox = document.getElementById('boxQuickSelect');
 
-                if (hayGanador && quickSelectBox) {
-                    quickSelectBox.classList.add('opacity-50', 'pointer-events-none');
+                if (hayGanador) {
+                    if (quickSelectBox) quickSelectBox.classList.add('opacity-50', 'pointer-events-none');
+                    selectedNumbers = [];
+                    actualizarBarraFlotante();
                 } else if (quickSelectBox) {
                     quickSelectBox.classList.remove('opacity-50', 'pointer-events-none');
                 }
@@ -724,6 +729,7 @@
                             btn.innerText = `🏆 ${numStr}`;
                         } else {
                             btn.className = 'h-12 sm:h-14 bg-[#0a0f1d] text-slate-600 border border-slate-900 rounded-2xl font-mono text-sm sm:text-base flex items-center justify-center cursor-not-allowed opacity-50';
+                            btn.innerText = numStr;
                         }
                         btn.disabled = true;
                     } else {
@@ -843,8 +849,12 @@
             }
         }
 
+        // ========================================================
+        // 🔍 CONSULTA DE TICKET (CÉDULA, NÚMERO O CÓDIGO DE TICKET)
+        // ========================================================
         function consultarBoleto() {
-            const query = document.getElementById('searchTicketInput').value.trim().toLowerCase();
+            const queryRaw = document.getElementById('searchTicketInput').value.trim();
+            const query = queryRaw.toLowerCase();
             const box = document.getElementById('searchResultBox');
             if (!query) { box.classList.add('hidden'); return; }
 
@@ -853,7 +863,15 @@
                 const numStr = i.toString().padStart(2, '0');
                 const item = numbersData[numStr];
                 if (item) {
-                    if (item.number === query || (item.ci && item.ci.toLowerCase().includes(query))) {
+                    const ticketCode = generarCodigoTicket(item.number, item.ci).toLowerCase();
+                    const ciClean = (item.ci || '').toLowerCase().replace(/\s/g, '');
+                    const queryClean = query.replace(/\s/g, '');
+
+                    if (
+                        item.number === query || 
+                        ticketCode === queryClean || 
+                        ciClean.includes(queryClean)
+                    ) {
                         found.push(item);
                     }
                 }
@@ -862,24 +880,25 @@
             box.classList.remove('hidden');
             if (found.length === 0) {
                 box.className = "text-xs p-3.5 rounded-2xl border bg-[#070a12] border-slate-800 text-slate-400";
-                box.innerHTML = `No se registran boletos para <strong>"${query}"</strong>.`;
+                box.innerHTML = `No se registran boletos coincidentes con <strong>"${queryRaw}"</strong>.`;
             } else {
                 let html = '<div class="space-y-2">';
                 found.forEach(f => {
                     let badge = f.status === 'sold' ? '<span class="text-emerald-400 font-bold">🟢 CONFIRMADO Y PAGADO</span>' :
                                 '<span class="text-amber-400 font-bold">🟡 EN VERIFICACIÓN (PAGO PENDIENTE)</span>';
                     
+                    const tckCode = generarCodigoTicket(f.number, f.ci);
                     let downloadBtn = '';
                     if (f.status === 'sold') {
                         downloadBtn = `<button onclick='abrirTicketOficial(${JSON.stringify(f)})' class="mt-2 w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2 rounded-xl text-xs uppercase flex items-center justify-center gap-1.5 shadow">
-                            <i class="fa-solid fa-ticket"></i> Ver y Descargar Ticket Oficial
+                            <i class="fa-solid fa-ticket"></i> Ver y Descargar Ticket Oficial (${tckCode})
                         </button>`;
                     } else {
-                        downloadBtn = `<p class="text-[10px] text-slate-400 italic mt-1">El ticket oficial y descargable se emitirá en cuanto el administrador confirme tu pago.</p>`;
+                        downloadBtn = `<p class="text-[10px] text-slate-400 italic mt-1">El ticket oficial descargable (${tckCode}) se emitirá al confirmar tu pago.</p>`;
                     }
 
                     html += `<div class="bg-[#131b2e] p-3.5 rounded-xl border border-slate-800 space-y-1">
-                        <div class="flex justify-between font-bold"><span>Boleto #${f.number}</span> ${badge}</div>
+                        <div class="flex justify-between font-bold"><span>Boleto #${f.number} <span class="text-amber-400 font-mono text-[10px]">(${tckCode})</span></span> ${badge}</div>
                         <div class="text-[11px] text-slate-300">Comprador: ${f.name} (CI: ${f.ci})</div>
                         <div class="text-[10px] text-amber-400/80 font-mono">Ref/Método: ${f.reference}</div>
                         ${downloadBtn}
@@ -977,7 +996,7 @@
 
             selectedNumbers = [];
             actualizarBarraFlotante();
-            cargarEstadoNumeros();
+            await sincronizarTodo();
 
             if (btn) {
                 btn.disabled = false;
@@ -987,7 +1006,7 @@
 
         function abrirTicketOficial(item) {
             ultimoTicket = {
-                code: `TCK-${item.number}-${(item.ci ? item.ci.replace(/\D/g, '').slice(-3) : '100')}`,
+                code: generarCodigoTicket(item.number, item.ci),
                 nombre: item.name,
                 cedula: item.ci,
                 numeros: item.number,
@@ -1059,12 +1078,27 @@
             raffleConfig.winner_number = numWinner;
 
             if (_supabase) {
-                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, winner_number: numWinner, bcv_rate: raffleConfig.bcvRate });
+                await _supabase.from('raffle_config').upsert({
+                    id: 1,
+                    title: raffleConfig.title,
+                    description: raffleConfig.description,
+                    method: raffleConfig.method,
+                    price: raffleConfig.price,
+                    bcv_rate: raffleConfig.bcvRate,
+                    bank: raffleConfig.bank,
+                    phone: raffleConfig.phone,
+                    cedula: raffleConfig.cedula,
+                    whatsapp: raffleConfig.whatsapp,
+                    winner_number: numWinner,
+                    img1: raffleConfig.img1,
+                    img2: raffleConfig.img2,
+                    img3: raffleConfig.img3
+                }, { onConflict: ['id'] });
             }
 
             revisarEstadoGanadorAdmin();
-            cargarEstadoNumeros();
-            mostrarToast(`¡Boleto #${numWinner} guardado como GANADOR de la Rifa!`);
+            await sincronizarTodo();
+            mostrarToast(`¡Boleto #${numWinner} guardado y transmitido como GANADOR!`);
         }
 
         async function reiniciarRifaTotal() {
@@ -1085,12 +1119,27 @@
 
             if (_supabase) {
                 await _supabase.from('raffle_numbers').delete().neq('number', 'XX');
-                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, winner_number: "", bcv_rate: raffleConfig.bcvRate });
+                await _supabase.from('raffle_config').upsert({
+                    id: 1,
+                    title: raffleConfig.title,
+                    description: raffleConfig.description,
+                    method: raffleConfig.method,
+                    price: raffleConfig.price,
+                    bcv_rate: raffleConfig.bcvRate,
+                    bank: raffleConfig.bank,
+                    phone: raffleConfig.phone,
+                    cedula: raffleConfig.cedula,
+                    whatsapp: raffleConfig.whatsapp,
+                    winner_number: "",
+                    img1: raffleConfig.img1,
+                    img2: raffleConfig.img2,
+                    img3: raffleConfig.img3
+                }, { onConflict: ['id'] });
             }
 
             revisarEstadoGanadorAdmin();
-            cargarEstadoNumeros();
-            mostrarToast("¡Rifa reiniciada! Todos los boletos han sido liberados.");
+            await sincronizarTodo();
+            mostrarToast("¡Rifa reiniciada! Se han desbloqueado los boletos en todos los dispositivos.");
         }
 
         function revisarEstadoGanadorAdmin() {
@@ -1130,15 +1179,17 @@
             if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
 
             const currentUrl = window.location.href.split('#')[0];
+            const tckCode = generarCodigoTicket(itemWinner.number, itemWinner.ci);
 
             let msgGanador = `🎉🎉 ¡¡¡FELICITACIONES *${itemWinner.name.toUpperCase()}*!!! 🎉🎉\n\n` +
                 `🏆 ¡ERES EL AFORTUNADO GANADOR DE LA *${raffleConfig.title.toUpperCase()}*! 🏆\n\n` +
                 `🎟️ *Boleto Ganador:* #${itemWinner.number}\n` +
                 `🆔 *Cédula:* ${itemWinner.ci}\n` +
+                `⭐ *Código de Ticket:* ${tckCode}\n` +
                 `🎁 *Premio:* ${raffleConfig.description}\n\n` +
-                `Puedes consultar el anuncio oficial ingresando a la página web:\n` +
+                `Puedes consultar el anuncio oficial e ingresar tu ticket en la web:\n` +
                 `👉 ${currentUrl}\n\n` +
-                `Nos pondremos en contacto contigo de inmediato para coordinar la entrega oficial de tu premio. ¡Felicidades! 🥳👏`;
+                `Nos pondremos en contacto contigo de inmediato para la entrega oficial. ¡Felicidades! 🥳👏`;
 
             window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msgGanador)}`, '_blank');
         }
@@ -1167,7 +1218,7 @@
             document.getElementById('adminCashCi').value = '';
 
             mostrarToast(`¡Boleto #${num} registrado como PAGADO y CONFIRMADO con éxito!`);
-            cargarEstadoNumeros();
+            await sincronizarTodo();
         }
 
         async function subirImagenSupabase(fileInput) {
@@ -1204,14 +1255,29 @@
             raffleConfig.img1 = url1; raffleConfig.img2 = url2; raffleConfig.img3 = url3;
 
             if (_supabase) {
-                await _supabase.from('raffle_config').upsert({ id: 1, ...raffleConfig, bcv_rate: raffleConfig.bcvRate });
+                await _supabase.from('raffle_config').upsert({
+                    id: 1,
+                    title: raffleConfig.title,
+                    description: raffleConfig.description,
+                    method: raffleConfig.method,
+                    price: raffleConfig.price,
+                    bcv_rate: raffleConfig.bcvRate,
+                    bank: raffleConfig.bank,
+                    phone: raffleConfig.phone,
+                    cedula: raffleConfig.cedula,
+                    whatsapp: raffleConfig.whatsapp,
+                    winner_number: raffleConfig.winner_number || "",
+                    img1: raffleConfig.img1,
+                    img2: raffleConfig.img2,
+                    img3: raffleConfig.img3
+                }, { onConflict: ['id'] });
             }
 
-            actualizarUIConfiguracion();
+            await sincronizarTodo();
             if (btn) { btn.disabled = false; btn.innerHTML = `Guardar Ajustes de la Rifa`; }
 
             closeAdminModal();
-            mostrarToast("¡Ajustes actualizados con éxito!");
+            mostrarToast("¡Ajustes guardados y transmitidos a todos los dispositivos!");
         }
 
         function enviarWhatsappCompradorDirecto(numberStr) {
@@ -1231,7 +1297,7 @@
             if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
 
             const currentUrl = window.location.href.split('#')[0];
-            const codigoTicket = `TCK-${item.number}-${(item.ci ? item.ci.replace(/\D/g, '').slice(-3) : '100')}`;
+            const codigoTicket = generarCodigoTicket(item.number, item.ci);
 
             let textNotif = `¡Hola *${nombreCliente}*! 🎉\n\n` +
                 `Tu pago para la *${raffleConfig.title}* ha sido *VERIFICADO Y CONFIRMADO* con éxito. ✅\n\n` +
@@ -1240,7 +1306,7 @@
                 `💳 *Referencia:* ${item.reference || 'Verificada'}\n` +
                 `⭐ *Código de Ticket:* ${codigoTicket}\n\n` +
                 `📲 *¿CÓMO DESCARGAR TU TICKET OFICIAL?*\n` +
-                `Puedes consultar y descargar tu Ticket Digital Oficial entrando directamente a nuestra página web e ingresando tu *número de cédula* (${item.ci}) o el *número de boleto* (#${item.number}) en el buscador:\n` +
+                `Puedes consultar y descargar tu Ticket Digital Oficial entrando a nuestra web e ingresando tu *Cédula* (${item.ci}) o tu *Código de Ticket* (${codigoTicket}) en el buscador:\n` +
                 `👉 ${currentUrl}\n\n` +
                 `¡Mucho éxito en el sorteo! 🍀`;
 
@@ -1321,7 +1387,7 @@
 
                 mostrarToast(`¡Boleto #${numberStr} actualizado a ${newStatus === 'sold' ? 'PAGADO' : newStatus.toUpperCase()}!`);
             }
-            cargarEstadoNumeros();
+            await sincronizarTodo();
         }
     </script>
 </body>
