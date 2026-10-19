@@ -49,7 +49,7 @@
 <body class="bg-[#050811] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-amber-400 selection:text-slate-950">
 
     <!-- BANNER DE NOTIFICACIÓN FLOTANTE (TOAST) -->
-    <div id="toastNotification" class="fixed top-5 right-5 z-50 transform translate-x-full opacity-0 transition-all duration-500 max-w-sm w-full bg-emerald-500 text-slate-950 p-4 rounded-2xl shadow-2xl border border-emerald-300 flex items-center gap-3 font-bold text-xs pointer-events-none">
+    <div id="toastNotification" class="fixed top-5 right-5 z-[999] transform translate-x-full opacity-0 transition-all duration-500 max-w-sm w-full bg-emerald-500 text-slate-950 p-4 rounded-2xl shadow-2xl border border-emerald-300 flex items-center gap-3 font-bold text-xs pointer-events-none">
         <div class="w-9 h-9 bg-slate-950/20 rounded-xl flex items-center justify-center text-slate-950 text-lg">
             <i class="fa-solid fa-circle-check animate-bounce"></i>
         </div>
@@ -387,8 +387,8 @@
         </div>
     </div>
 
-    <!-- MODAL CONFIRMACIÓN CAMBIO DE CLAVE -->
-    <div id="modalConfirmarClave" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <!-- MODAL CONFIRMACIÓN CAMBIO DE CLAVE (Z-INDEX SUPERIOR AL ADMIN) -->
+    <div id="modalConfirmarClave" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
         <div class="glass-modal rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 border border-amber-500/50">
             <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center text-2xl mx-auto border border-amber-500/40">
                 <i class="fa-solid fa-shield-halved animate-bounce"></i>
@@ -925,9 +925,6 @@
             }
         }
 
-        // ========================================================
-        // 🔒 BÚSQUEDA PRIVADA DE TICKET
-        // ========================================================
         function consultarBoleto() {
             const queryRaw = document.getElementById('searchTicketInput').value.trim();
             const query = queryRaw.toLowerCase();
@@ -1168,11 +1165,9 @@
             } else { alert("Clave incorrecta."); }
         }
 
-        // --- MÓDULO CAMBIO DE CLAVE SEGURO ---
         function solicitarCambioClaveAdmin() {
             const oldPass = document.getElementById('adminOldPassInput').value.trim();
             const newPass = document.getElementById('adminNewPassInput').value.trim();
-
             const currentPass = raffleConfig.admin_password || "1234";
 
             if (!oldPass || !newPass) {
@@ -1211,6 +1206,67 @@
 
             cerrarModalConfirmarClave();
             mostrarToast("¡Su clave se cambió satisfactoriamente!");
+        }
+
+        // --- GUARDAR AJUSTES GENERALES PERMANENTES EN SUPABASE ---
+        async function guardarAjustesAdmin() {
+            const btn = document.getElementById('btnSaveAdmin');
+            if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando Ajustes...`; }
+
+            let url1 = await subirImagenSupabase(document.getElementById('filePrize1')) || document.getElementById('adminImg1').value.trim() || raffleConfig.img1;
+            let url2 = await subirImagenSupabase(document.getElementById('filePrize2')) || document.getElementById('adminImg2').value.trim() || raffleConfig.img2;
+            let url3 = await subirImagenSupabase(document.getElementById('filePrize3')) || document.getElementById('adminImg3').value.trim() || raffleConfig.img3;
+
+            raffleConfig.title = document.getElementById('adminTitleInput').value;
+            raffleConfig.description = document.getElementById('adminDescInput').value;
+            raffleConfig.method = document.getElementById('adminMethodInput').value;
+            raffleConfig.price = parseFloat(document.getElementById('adminPriceInput').value) || 2.00;
+            raffleConfig.bcvRate = parseFloat(document.getElementById('adminBcvInput').value) || 881.06;
+            raffleConfig.bank = document.getElementById('adminBankInput').value;
+            raffleConfig.phone = document.getElementById('adminPhoneInput').value;
+            raffleConfig.cedula = document.getElementById('adminCedulaInput').value;
+            raffleConfig.whatsapp = document.getElementById('adminWhatsappInput').value;
+            raffleConfig.img1 = url1; raffleConfig.img2 = url2; raffleConfig.img3 = url3;
+
+            if (_supabase) {
+                await _supabase.from('raffle_config').upsert({
+                    id: 1,
+                    title: raffleConfig.title,
+                    description: raffleConfig.description,
+                    method: raffleConfig.method,
+                    price: raffleConfig.price,
+                    bcv_rate: raffleConfig.bcvRate,
+                    bank: raffleConfig.bank,
+                    phone: raffleConfig.phone,
+                    cedula: raffleConfig.cedula,
+                    whatsapp: raffleConfig.whatsapp,
+                    winner_number: raffleConfig.winner_number || "",
+                    admin_password: raffleConfig.admin_password || "1234",
+                    img1: raffleConfig.img1,
+                    img2: raffleConfig.img2,
+                    img3: raffleConfig.img3
+                }, { onConflict: ['id'] });
+            }
+
+            await sincronizarTodo();
+            if (btn) { btn.disabled = false; btn.innerHTML = `Guardar Ajustes de la Rifa`; }
+
+            closeAdminModal();
+            mostrarToast("¡Ajustes guardados y transmitidos a todos los dispositivos!");
+        }
+
+        async function subirImagenSupabase(fileInput) {
+            if (!_supabase || !fileInput || !fileInput.files.length) return null;
+            try {
+                const file = fileInput.files[0];
+                const fileName = `prize_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
+                const { data, error } = await _supabase.storage.from('captures').upload(fileName, file);
+                if (!error) {
+                    const { data: publicURLData } = _supabase.storage.from('captures').getPublicUrl(fileName);
+                    return publicURLData.publicUrl;
+                }
+            } catch(e) {}
+            return null;
         }
 
         async function publicarGanadorAdmin() {
@@ -1363,66 +1419,6 @@
 
             mostrarToast(`¡Boleto #${num} registrado como PAGADO y CONFIRMADO con éxito!`);
             await sincronizarTodo();
-        }
-
-        async function subirImagenSupabase(fileInput) {
-            if (!_supabase || !fileInput || !fileInput.files.length) return null;
-            try {
-                const file = fileInput.files[0];
-                const fileName = `prize_${Date.now()}_${Math.random().toString(36).substring(7)}.${file.name.split('.').pop()}`;
-                const { data, error } = await _supabase.storage.from('captures').upload(fileName, file);
-                if (!error) {
-                    const { data: publicURLData } = _supabase.storage.from('captures').getPublicUrl(fileName);
-                    return publicURLData.publicUrl;
-                }
-            } catch(e) {}
-            return null;
-        }
-
-        async function guardarAjustesAdmin() {
-            const btn = document.getElementById('btnSaveAdmin');
-            if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Guardando Ajustes...`; }
-
-            let url1 = await subirImagenSupabase(document.getElementById('filePrize1')) || document.getElementById('adminImg1').value.trim() || raffleConfig.img1;
-            let url2 = await subirImagenSupabase(document.getElementById('filePrize2')) || document.getElementById('adminImg2').value.trim() || raffleConfig.img2;
-            let url3 = await subirImagenSupabase(document.getElementById('filePrize3')) || document.getElementById('adminImg3').value.trim() || raffleConfig.img3;
-
-            raffleConfig.title = document.getElementById('adminTitleInput').value;
-            raffleConfig.description = document.getElementById('adminDescInput').value;
-            raffleConfig.method = document.getElementById('adminMethodInput').value;
-            raffleConfig.price = parseFloat(document.getElementById('adminPriceInput').value) || 2.00;
-            raffleConfig.bcvRate = parseFloat(document.getElementById('adminBcvInput').value) || 881.06;
-            raffleConfig.bank = document.getElementById('adminBankInput').value;
-            raffleConfig.phone = document.getElementById('adminPhoneInput').value;
-            raffleConfig.cedula = document.getElementById('adminCedulaInput').value;
-            raffleConfig.whatsapp = document.getElementById('adminWhatsappInput').value;
-            raffleConfig.img1 = url1; raffleConfig.img2 = url2; raffleConfig.img3 = url3;
-
-            if (_supabase) {
-                await _supabase.from('raffle_config').upsert({
-                    id: 1,
-                    title: raffleConfig.title,
-                    description: raffleConfig.description,
-                    method: raffleConfig.method,
-                    price: raffleConfig.price,
-                    bcv_rate: raffleConfig.bcvRate,
-                    bank: raffleConfig.bank,
-                    phone: raffleConfig.phone,
-                    cedula: raffleConfig.cedula,
-                    whatsapp: raffleConfig.whatsapp,
-                    winner_number: raffleConfig.winner_number || "",
-                    admin_password: raffleConfig.admin_password,
-                    img1: raffleConfig.img1,
-                    img2: raffleConfig.img2,
-                    img3: raffleConfig.img3
-                }, { onConflict: ['id'] });
-            }
-
-            await sincronizarTodo();
-            if (btn) { btn.disabled = false; btn.innerHTML = `Guardar Ajustes de la Rifa`; }
-
-            closeAdminModal();
-            mostrarToast("¡Ajustes guardados y transmitidos a todos los dispositivos!");
         }
 
         function enviarWhatsappCompradorDirecto(numberStr) {
