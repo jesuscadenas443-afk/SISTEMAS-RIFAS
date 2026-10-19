@@ -60,7 +60,7 @@
         </div>
     </div>
 
-    <!-- HEADER ADAPTABLE (AHORA MUESTRA BCV EN MÓVIL TAMBIÉN) -->
+    <!-- HEADER ADAPTABLE -->
     <header class="bg-[#0b101d] border-b-2 border-amber-500/30 sticky top-0 z-40 shadow-2xl py-3">
         <div class="max-w-6xl mx-auto px-4 flex justify-between items-center flex-wrap gap-2.5">
             
@@ -89,7 +89,6 @@
                     </div>
                 </div>
 
-                <!-- CORREGIDO: Visible tanto en Móvil como en PC -->
                 <div class="flex bg-[#131b2e] border-2 border-slate-700 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl text-emerald-400 font-mono text-[11px] sm:text-sm items-center gap-1.5 font-bold shadow-inner">
                     <i class="fa-solid fa-coins text-amber-400 text-xs sm:text-sm"></i>
                     <span>BCV: <strong id="bcvRateDisplay" class="text-white">Cargando...</strong></span>
@@ -118,13 +117,15 @@
             </p>
         </div>
 
-        <!-- BANNER PRINCIPAL -->
+        <!-- BANNER PRINCIPAL CON BOTÓN CLICKEABLE "¿CÓMO PARTICIPAR?" -->
         <div class="relative bg-gradient-to-br from-[#131b2e] via-[#0b101d] to-amber-950/40 border-2 border-amber-500/40 p-6 sm:p-8 rounded-3xl shadow-2xl glow-dynamic space-y-4">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
                 <div class="lg:col-span-7 space-y-3 text-center lg:text-left">
-                    <div class="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 border-2 border-amber-400/50 text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-wider">
-                        <i class="fa-solid fa-circle-info text-sm"></i> ¿Cómo participar?
-                    </div>
+                    
+                    <button onclick="abrirModalComoParticipar()" class="inline-flex items-center gap-2 bg-amber-400/20 hover:bg-amber-400/30 text-amber-300 border-2 border-amber-400/50 hover:border-amber-400 text-xs font-black px-4 py-2 rounded-full uppercase tracking-wider transition shadow-md cursor-pointer hover:scale-105 active:scale-95">
+                        <i class="fa-solid fa-circle-question text-base animate-pulse text-amber-400"></i> ¿Cómo participar? <span class="bg-amber-400 text-slate-950 text-[10px] px-2 py-0.5 rounded-full font-black ml-1">Clic aquí</span>
+                    </button>
+
                     <h2 class="text-xl sm:text-3xl font-black text-white leading-tight">
                         ¡Gana Excelente Premio Apoyando Nuestra Meta!
                     </h2>
@@ -153,7 +154,7 @@
             </div>
         </div>
 
-        <!-- GALERÍA -->
+        <!-- GALERÍA DE PREMIOS -->
         <div class="glass-card p-5 sm:p-6 rounded-3xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-700 pb-3">
                 <h3 class="text-sm sm:text-base font-black text-amber-400 uppercase tracking-wider flex items-center gap-2">
@@ -221,10 +222,10 @@
             </div>
         </div>
 
-        <!-- BUSCADOR -->
+        <!-- BUSCADOR SEGURO (SOLO CÉDULA O CÓDIGO DE TICKET) -->
         <div class="glass-card p-5 rounded-3xl space-y-3">
             <label class="block text-sm font-black text-slate-100 flex items-center gap-2">
-                <i class="fa-solid fa-magnifying-glass text-amber-400 text-base"></i> Consultar mis boletos y descargar ticket oficial:
+                <i class="fa-solid fa-magnifying-glass text-amber-400 text-base"></i> Consultar tus boletos o descargar ticket oficial:
             </label>
             <div class="flex flex-col sm:flex-row gap-3">
                 <input type="text" id="searchTicketInput" placeholder="Ingresa tu Cédula (Ej: V-30668946) o tu Código de Ticket (Ej: TCK-07-946)" class="flex-1 bg-[#070a12] border-2 border-slate-700 rounded-2xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-amber-400 transition font-mono font-bold">
@@ -262,6 +263,51 @@
                     <i class="fa-solid fa-cart-shopping text-base sm:text-lg"></i> Reportar Pago Ahora
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ¿CÓMO PARTICIPAR? -->
+    <div id="modalComoParticipar" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-modal rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative space-y-5">
+            <button onclick="cerrarModalComoParticipar()" class="absolute top-5 right-5 text-slate-400 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+
+            <div class="text-center space-y-2">
+                <div class="w-14 h-14 bg-amber-400/20 text-amber-400 rounded-2xl flex items-center justify-center text-3xl mx-auto border-2 border-amber-400/50">
+                    <i class="fa-solid fa-circle-info"></i>
+                </div>
+                <h2 class="text-xl sm:text-2xl font-black text-amber-400">¿Cómo participar en la rifa?</h2>
+                <p class="text-xs text-slate-300 font-bold">Sigue estos 3 sencillos pasos para asegurar tus números:</p>
+            </div>
+
+            <div class="space-y-4 text-xs sm:text-sm">
+                <div class="bg-[#070a12] p-4 rounded-2xl border-2 border-slate-700 flex items-start gap-3 shadow-inner">
+                    <div class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-base flex-shrink-0">1</div>
+                    <div class="space-y-1">
+                        <h3 class="font-black text-slate-100 text-sm">Selecciona tu(s) número(s)</h3>
+                        <p class="text-slate-300 font-semibold leading-snug">Toca cualquier casillero del <strong>00 al 99</strong> en la pantalla o presiona los botones de <strong>Selección al Azar</strong>.</p>
+                    </div>
+                </div>
+
+                <div class="bg-[#070a12] p-4 rounded-2xl border-2 border-slate-700 flex items-start gap-3 shadow-inner">
+                    <div class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-base flex-shrink-0">2</div>
+                    <div class="space-y-1">
+                        <h3 class="font-black text-slate-100 text-sm">Reporta tu pago</h3>
+                        <p class="text-slate-300 font-semibold leading-snug">Presiona el botón <strong class="text-amber-400">amarillo de reporte</strong> abajo, completa tus datos, elige si pagas en <strong>Pago Móvil</strong> o <strong>Efectivo</strong> y envía el comprobante por WhatsApp.</p>
+                    </div>
+                </div>
+
+                <div class="bg-[#070a12] p-4 rounded-2xl border-2 border-slate-700 flex items-start gap-3 shadow-inner">
+                    <div class="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 font-black flex items-center justify-center text-base flex-shrink-0">3</div>
+                    <div class="space-y-1">
+                        <h3 class="font-black text-slate-100 text-sm">¡Listo! Reclama tu Ticket</h3>
+                        <p class="text-slate-300 font-semibold leading-snug">Una vez confirmado el pago, introduce tu <strong>Cédula</strong> en el buscador de la página para <strong>descargar tu Ticket Digital Oficial</strong>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="cerrarModalComoParticipar()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-3.5 rounded-2xl text-xs sm:text-sm uppercase tracking-wider transition shadow-lg">
+                ¡Entendido, quiero elegir mi número!
+            </button>
         </div>
     </div>
 
@@ -341,7 +387,7 @@
         </div>
     </div>
 
-    <!-- MODAL TICKET -->
+    <!-- MODAL TICKET OFICIAL -->
     <div id="modalTicket" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="glass-modal rounded-3xl p-6 max-w-sm w-full shadow-2xl relative space-y-4 text-center">
             <button onclick="cerrarModalTicket()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
@@ -360,7 +406,7 @@
                 <div class="bg-[#070a12] border border-slate-700 rounded-xl p-3.5 text-left text-xs space-y-2 font-mono font-bold">
                     <p class="border-b border-slate-800 pb-1 flex justify-between"><span class="text-slate-400">Comprador:</span> <strong id="tktNombre" class="text-slate-100">...</strong></p>
                     <p class="border-b border-slate-800 pb-1 flex justify-between"><span class="text-slate-400">Cédula:</span> <strong id="tktCedula" class="text-slate-100">...</strong></p>
-                    <p class="border-b border-slate-800 pb-1 flex justify-between"><span class="text-slate-400">Boleto(s):</span> <strong id="tktNumeros" class="text-amber-400 font-black text-base">...</strong></p>
+                    <p class="border-b border-slate-800 pb-1 flex justify-between"><span class="text-slate-400">Boletos (<span id="tktCount">1</span>):</span> <strong id="tktNumeros" class="text-amber-400 font-black text-base">...</strong></p>
                     <p class="border-b border-slate-800 pb-1 flex justify-between"><span class="text-slate-400">Ref / Método:</span> <strong id="tktRef" class="text-slate-100">...</strong></p>
                     <p class="flex justify-between"><span class="text-slate-400">Estado:</span> <strong class="text-emerald-400 font-black">🟢 PAGADO / VÁLIDO</strong></p>
                 </div>
@@ -469,7 +515,7 @@
                         <i class="fa-solid fa-money-bill-wave"></i> Registro de Venta Directa en Efectivo
                     </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
-                        <input type="text" id="adminCashNum" placeholder="Nº Boleto (Ej: 07)" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-mono font-bold">
+                        <input type="text" id="adminCashNum" placeholder="Nº Boleto(s) Ej: 07, 12" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-mono font-bold">
                         <input type="text" id="adminCashName" placeholder="Nombre Comprador" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold">
                         <input type="text" id="adminCashCi" placeholder="Cédula (Ej: V-123456)" class="bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold">
                         <button onclick="registrarVentaEfectivoAdmin()" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-3 rounded-xl transition uppercase text-xs shadow">Vender en Efectivo</button>
@@ -563,7 +609,7 @@
         let numbersData = {}; 
         let ultimoTicket = null;
         let tempNuevaClave = "";
-        let isAdminSelectActive = false; // Variable para evitar que el select de la tabla se cierre solo
+        let isAdminSelectActive = false;
 
         let raffleConfig = {
             id: 1,
@@ -585,9 +631,20 @@
 
         let isAdminLoggedIn = false;
 
-        function generarCodigoTicket(num, ci) {
+        function abrirModalComoParticipar() {
+            document.getElementById('modalComoParticipar').classList.remove('hidden');
+        }
+
+        function cerrarModalComoParticipar() {
+            document.getElementById('modalComoParticipar').classList.add('hidden');
+        }
+
+        function generarCodigoTicket(nums, ci) {
             const ciClean = ci ? ci.replace(/\D/g, '').slice(-3) : '100';
-            return `TCK-${num.toString().padStart(2, '0')}-${ciClean}`;
+            let primerNum = "00";
+            if (Array.isArray(nums) && nums.length > 0) primerNum = nums[0];
+            else if (typeof nums === 'string') primerNum = nums.split(',')[0].trim();
+            return `TCK-${primerNum.padStart(2, '0')}-${ciClean}`;
         }
 
         function mostrarToast(mensaje) {
@@ -851,7 +908,7 @@
                         } else {
                             btn.disabled = false;
                             if (selectedNumbers.includes(numStr)) {
-                                btn.className = 'num-btn-accessible bg-amber-400 text-slate-950 font-mono font-black rounded-2xl shadow-2xl scale-105 border-4 border-amber-100 flex items-center justify-center cursor-pointer';
+                                btn.className = 'num-btn-accessible bg-amber-400 text-slate-950 font-black rounded-2xl shadow-2xl scale-105 border-4 border-amber-100 flex items-center justify-center cursor-pointer';
                             } else {
                                 btn.className = 'num-btn-accessible bg-[#131b2e] border-2 border-slate-700 rounded-2xl font-mono text-slate-100 hover:border-amber-400 transition-all hover:scale-105 flex items-center justify-center shadow-lg cursor-pointer';
                             }
@@ -870,7 +927,6 @@
 
                 actualizarBannerGanadorPublico();
 
-                // SOLUCIÓN: Solo redibujar la tabla si el administrador NO tiene abierto un menú desplegable
                 if (isAdminLoggedIn && !isAdminSelectActive) {
                     renderAdminTable();
                 }
@@ -960,59 +1016,88 @@
             }
         }
 
+        // BUSCADOR SEGURO: Únicamente permite consultar introduciendo la Cédula o el Código de Ticket
         function consultarBoleto() {
             const queryRaw = document.getElementById('searchTicketInput').value.trim();
-            const query = queryRaw.toLowerCase();
+            const queryClean = queryRaw.toLowerCase().replace(/\s/g, '');
             const box = document.getElementById('searchResultBox');
-            if (!query) { box.classList.add('hidden'); return; }
+            
+            if (!queryClean) { box.classList.add('hidden'); return; }
 
-            if (/^\d{1,2}$/.test(queryRaw)) {
-                box.classList.remove('hidden');
-                box.className = "text-sm p-4 rounded-2xl border-2 bg-[#070a12] border-rose-500 text-rose-200 font-bold";
-                box.innerHTML = `<i class="fa-solid fa-lock text-rose-400 mr-2"></i> Por seguridad, ingresa tu <strong>Cédula de Identidad</strong> completa (Ej: V-30668946) o tu <strong>Código de Ticket</strong>.`;
-                return;
-            }
-
-            let found = [];
+            // Recopilar todos los boletos registrados
+            let list = [];
             for (let i = 0; i < 100; i++) {
                 const numStr = i.toString().padStart(2, '0');
-                const item = numbersData[numStr];
-                if (item) {
-                    const ticketCode = generarCodigoTicket(item.number, item.ci).toLowerCase();
-                    const ciClean = (item.ci || '').toLowerCase().replace(/\s/g, '');
-                    const queryClean = query.replace(/\s/g, '');
-
-                    if (
-                        ticketCode === queryClean || 
-                        ciClean.includes(queryClean)
-                    ) {
-                        found.push(item);
-                    }
-                }
+                if (numbersData[numStr]) list.push(numbersData[numStr]);
             }
+
+            // Agrupar compras por Cédula + Referencia para formar tickets unificados
+            let ticketsMap = {};
+            list.forEach(item => {
+                const key = `${(item.ci || '').trim()}_${(item.reference || '').trim()}`;
+                if (!ticketsMap[key]) {
+                    ticketsMap[key] = {
+                        name: item.name,
+                        ci: item.ci,
+                        phone: item.phone,
+                        reference: item.reference,
+                        status: item.status,
+                        numbers: [item.number]
+                    };
+                } else {
+                    if (!ticketsMap[key].numbers.includes(item.number)) {
+                        ticketsMap[key].numbers.push(item.number);
+                    }
+                    if (item.status === 'sold') ticketsMap[key].status = 'sold';
+                }
+            });
+
+            // Filtrar exclusivamente por Cédula o Código de Ticket exacto
+            let found = [];
+            Object.values(ticketsMap).forEach(tck => {
+                const ciClean = (tck.ci || '').toLowerCase().replace(/\s/g, '');
+                const tckCode = generarCodigoTicket(tck.numbers, tck.ci).toLowerCase();
+
+                if (ciClean.includes(queryClean) || tckCode === queryClean) {
+                    found.push(tck);
+                }
+            });
 
             box.classList.remove('hidden');
             if (found.length === 0) {
                 box.className = "text-sm p-4 rounded-2xl border-2 bg-[#070a12] border-slate-700 text-slate-300 font-bold";
-                box.innerHTML = `No se registran boletos con los datos ingresados: <strong>"${queryRaw}"</strong>.`;
+                box.innerHTML = `No se encontraron boletos para: <strong>"${queryRaw}"</strong>. Ingresa tu Cédula completa o Código de Ticket.`;
             } else {
                 let html = '<div class="space-y-3">';
                 found.forEach(f => {
-                    let badge = f.status === 'sold' ? '<span class="text-emerald-400 font-black">🟢 CONFIRMADO Y PAGADO</span>' :
-                                '<span class="text-amber-400 font-black">🟡 EN VERIFICACIÓN</span>';
+                    const sortedNums = f.numbers.sort((a, b) => parseInt(a) - parseInt(b)).join(', ');
+                    const countNums = f.numbers.length;
+                    const badge = f.status === 'sold' ? '<span class="text-emerald-400 font-black">🟢 CONFIRMADO Y PAGADO</span>' : '<span class="text-amber-400 font-black">🟡 EN VERIFICACIÓN</span>';
+                    const tckCode = generarCodigoTicket(f.numbers, f.ci);
                     
-                    const tckCode = generarCodigoTicket(f.number, f.ci);
                     let downloadBtn = '';
                     if (f.status === 'sold') {
-                        downloadBtn = `<button onclick='abrirTicketOficial(${JSON.stringify(f)})' class="mt-2 w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase flex items-center justify-center gap-2 shadow">
+                        const ticketDataJson = JSON.stringify({
+                            code: tckCode,
+                            name: f.name,
+                            ci: f.ci,
+                            numbers: sortedNums,
+                            count: countNums,
+                            reference: f.reference
+                        }).replace(/'/g, "&apos;");
+
+                        downloadBtn = `<button onclick='abrirTicketOficial(${ticketDataJson})' class="mt-2 w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase flex items-center justify-center gap-2 shadow">
                             <i class="fa-solid fa-ticket text-base"></i> Ver Ticket Oficial (${tckCode})
                         </button>`;
                     } else {
-                        downloadBtn = `<p class="text-xs text-slate-300 italic mt-1 font-semibold">El ticket oficial (${tckCode}) estará listo al confirmar tu pago.</p>`;
+                        downloadBtn = `<p class="text-xs text-slate-300 italic mt-1 font-semibold">El ticket oficial (${tckCode}) estará disponible en cuanto confirmemos tu pago.</p>`;
                     }
 
                     html += `<div class="bg-[#131b2e] p-4 rounded-xl border-2 border-slate-700 space-y-1">
-                        <div class="flex justify-between font-black text-sm"><span>Boleto #${f.number} <span class="text-amber-300 font-mono">(${tckCode})</span></span> ${badge}</div>
+                        <div class="flex justify-between font-black text-sm flex-wrap gap-1">
+                            <span>Boleto(s) <span class="text-amber-300 font-mono">#${sortedNums}</span> <span class="text-xs text-slate-400">(${countNums} nº)</span></span> 
+                            ${badge}
+                        </div>
                         <div class="text-xs text-slate-200 font-bold">Comprador: ${f.name} (CI: ${f.ci})</div>
                         <div class="text-xs text-amber-300 font-mono">Ref/Método: ${f.reference}</div>
                         ${downloadBtn}
@@ -1091,7 +1176,7 @@
             const waFormat = "58" + numWa.replace(/\D/g, ''); 
 
             let msg = `¡Hola! 👋 He reportado el pago de mi(s) boleto(s) para *${raffleConfig.title}*:\n\n` +
-                `🔢 *Boleto(s):* ${selectedNumbers.join(', ')}\n` +
+                `🔢 *Boleto(s):* ${selectedNumbers.join(', ')} (${selectedNumbers.length} nºs)\n` +
                 `👤 *Nombre:* ${nombre}\n` +
                 `🆔 *Cédula:* ${cedula}\n` +
                 `📱 *Teléfono:* ${telefono}\n` +
@@ -1114,24 +1199,26 @@
 
             if (btn) {
                 btn.disabled = false;
-                btn.innerHTML = `<i class="fa-brands fa-whatsapp text-xl"></i> Enviar Comprobante por WhatsApp`;
+                btn.innerHTML = `<i class="fa-brands fa-whatsapp text-xl"></i> Enviar Reporte de Pago por WhatsApp`;
             }
         }
 
-        function abrirTicketOficial(item) {
+        function abrirTicketOficial(tckObj) {
             ultimoTicket = {
-                code: generarCodigoTicket(item.number, item.ci),
-                nombre: item.name,
-                cedula: item.ci,
-                numeros: item.number,
-                referencia: item.reference
+                code: tckObj.code,
+                nombre: tckObj.name,
+                cedula: tckObj.ci,
+                numeros: tckObj.numbers,
+                count: tckObj.count || 1,
+                referencia: tckObj.reference
             };
 
             document.getElementById('ticketCodeDisplay').innerText = ultimoTicket.code;
             document.getElementById('tktNombre').innerText = ultimoTicket.nombre;
             document.getElementById('tktCedula').innerText = ultimoTicket.cedula;
             document.getElementById('tktNumeros').innerText = ultimoTicket.numeros;
-            document.getElementById('tktRef').innerText = ultimoTicket.referencia;
+            document.getElementById('tktCount').innerText = ultimoTicket.count;
+            document.getElementById('tktRef').innerText = ultimoTicket.reference;
 
             document.getElementById('modalTicket').classList.remove('hidden');
         }
@@ -1429,29 +1516,33 @@
         }
 
         async function registrarVentaEfectivoAdmin() {
-            const num = document.getElementById('adminCashNum').value.trim().padStart(2, '0');
+            const rawNums = document.getElementById('adminCashNum').value.trim();
             const name = document.getElementById('adminCashName').value.trim();
             const ci = document.getElementById('adminCashCi').value.trim();
 
-            if (!num || !name || !ci) { alert("Por favor indica el número, nombre y cédula."); return; }
+            if (!rawNums || !name || !ci) { alert("Por favor indica el boleto (o boletos separados por coma), nombre y cédula."); return; }
+
+            const numsArray = rawNums.split(',').map(n => n.trim().padStart(2, '0')).filter(n => n !== "");
 
             if (_supabase) {
-                await _supabase.from('raffle_numbers').upsert({
-                    number: num,
-                    status: 'sold',
-                    name: name,
-                    ci: ci,
-                    phone: 'EFECTIVO',
-                    reference: 'PAGO EFECTIVO DIRECTO',
-                    capture_url: ''
-                }, { onConflict: ['number'] });
+                for (const num of numsArray) {
+                    await _supabase.from('raffle_numbers').upsert({
+                        number: num,
+                        status: 'sold',
+                        name: name,
+                        ci: ci,
+                        phone: 'EFECTIVO',
+                        reference: 'PAGO EFECTIVO DIRECTO',
+                        capture_url: ''
+                    }, { onConflict: ['number'] });
+                }
             }
 
             document.getElementById('adminCashNum').value = '';
             document.getElementById('adminCashName').value = '';
             document.getElementById('adminCashCi').value = '';
 
-            mostrarToast(`¡Boleto #${num} registrado como PAGADO con éxito!`);
+            mostrarToast(`¡Boleto(s) #${numsArray.join(', ')} registrado(s) como PAGADO(S)!`);
             await sincronizarTodo();
         }
 
@@ -1481,7 +1572,7 @@
                 `💳 *Referencia:* ${item.reference || 'Verificada'}\n` +
                 `⭐ *Código de Ticket:* ${codigoTicket}\n\n` +
                 `📲 *¿CÓMO VER TU TICKET OFICIAL?*\n` +
-                `Ingresa a nuestra web y coloca tu *Cédula* (${item.ci}) o tu *Código* (${codigoTicket}) en el buscador:\n` +
+                `Ingresa a nuestra web y coloca tu *Cédula* (${item.ci}) en el buscador:\n` +
                 `👉 ${currentUrl}\n\n` +
                 `¡Mucho éxito en el sorteo! 🍀`;
 
@@ -1541,7 +1632,7 @@
         }
 
         async function cambiarEstadoAdmin(numberStr, newStatus) {
-            isAdminSelectActive = false; // Liberamos el bloqueo de recarga
+            isAdminSelectActive = false;
             if (!_supabase) return;
 
             const { data: dbItem } = await _supabase.from('raffle_numbers').select('*').eq('number', numberStr).maybeSingle();
