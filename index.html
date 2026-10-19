@@ -230,13 +230,13 @@
             </div>
         </div>
 
-        <!-- MÓDULO BUSCADOR Y CONSULTA DE TICKET OFICIAL -->
+        <!-- MÓDULO BUSCADOR PRIVADO Y CONSULTA DE TICKET OFICIAL -->
         <div class="glass-card p-4 sm:p-5 rounded-3xl space-y-3">
             <label class="block text-xs font-bold text-slate-300 flex items-center gap-2">
                 <i class="fa-solid fa-magnifying-glass text-amber-400"></i> Consultar mis boletos y descargar ticket oficial:
             </label>
             <div class="flex gap-2.5">
-                <input type="text" id="searchTicketInput" placeholder="Ingresa tu Cédula (Ej: V-30668946), Código de Ticket (Ej: TCK-07-946) o Nº de Boleto (Ej: 07)" class="flex-1 bg-[#070a12] border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-100 outline-none focus:border-amber-400 transition font-mono">
+                <input type="text" id="searchTicketInput" placeholder="Ingresa tu Cédula (Ej: V-30668946) o tu Código de Ticket (Ej: TCK-07-946)" class="flex-1 bg-[#070a12] border border-slate-800 rounded-2xl px-4 py-2.5 text-xs text-slate-100 outline-none focus:border-amber-400 transition font-mono">
                 <button onclick="consultarBoleto()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-xs transition shadow-lg shadow-amber-500/20 uppercase tracking-wide">
                     Consultar
                 </button>
@@ -397,12 +397,25 @@
 
             <div id="adminAuthSection" class="space-y-4">
                 <p class="text-xs text-slate-300">Ingresa la clave de administrador:</p>
-                <input type="password" id="adminPassInput" placeholder="Clave admin (Ej: 1234)" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs outline-none focus:border-amber-400">
+                <input type="password" id="adminPassInput" placeholder="Clave admin" class="w-full bg-[#070a12] border border-slate-800 rounded-2xl p-3 text-slate-100 text-xs outline-none focus:border-amber-400">
                 <button onclick="loginAdmin()" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold py-3 rounded-2xl text-xs transition shadow-lg">Acceder al Panel</button>
             </div>
 
             <div id="adminContentSection" class="hidden space-y-6">
                 
+                <!-- CAMBIAR CLAVE DE ADMINISTRADOR -->
+                <div class="bg-[#070a12]/80 p-4 rounded-2xl border border-slate-800 space-y-2">
+                    <h3 class="font-bold text-xs text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-key"></i> Cambiar Clave del Administrador
+                    </h3>
+                    <div class="flex gap-2 text-xs">
+                        <input type="password" id="adminNewPassInput" placeholder="Nueva clave secreta" class="flex-1 bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-slate-100">
+                        <button onclick="cambiarClaveAdmin()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition text-[11px] uppercase">
+                            Guardar Clave
+                        </button>
+                    </div>
+                </div>
+
                 <!-- PUBLICAR GANADOR DE LA RIFA Y REINICIO -->
                 <div class="bg-gradient-to-r from-amber-950/40 via-[#070a12] to-yellow-950/30 p-4 sm:p-5 rounded-3xl border border-amber-500/50 space-y-3">
                     <div class="flex justify-between items-center border-b border-slate-800 pb-2">
@@ -538,6 +551,7 @@
             cedula: "V-30668946",
             whatsapp: "04125668044",
             winner_number: "",
+            admin_password: "1234",
             img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80",
             img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80",
             img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80"
@@ -591,7 +605,6 @@
 
             await sincronizarTodo();
 
-            // Sincronización híbrida contínua cada 2 segundos para garantizar actualización en TODOS los móviles
             setInterval(async () => {
                 await sincronizarTodo();
             }, 2000);
@@ -602,9 +615,6 @@
             await cargarEstadoNumeros();
         }
 
-        // ==========================================
-        // 🔄 SUSCRIPCIÓN BROADCAST Y REALTIME DUAL
-        // ==========================================
         function suscripcionTiempoReal() {
             if (!_supabase) return;
 
@@ -634,6 +644,7 @@
             raffleConfig.cedula = data.cedula || raffleConfig.cedula;
             raffleConfig.whatsapp = data.whatsapp || data.phone || raffleConfig.whatsapp;
             raffleConfig.winner_number = (data.winner_number !== null && data.winner_number !== undefined) ? data.winner_number : "";
+            raffleConfig.admin_password = data.admin_password || raffleConfig.admin_password || "1234";
             if (data.img1) raffleConfig.img1 = data.img1;
             if (data.img2) raffleConfig.img2 = data.img2;
             if (data.img3) raffleConfig.img3 = data.img3;
@@ -861,13 +872,21 @@
         }
 
         // ========================================================
-        // 🔍 CONSULTA DE TICKET (CÉDULA, NÚMERO O CÓDIGO DE TICKET)
+        // 🔒 BÚSQUEDA PRIVADA DE TICKET (CÉDULA O CÓDIGO DE TICKET)
         // ========================================================
         function consultarBoleto() {
             const queryRaw = document.getElementById('searchTicketInput').value.trim();
             const query = queryRaw.toLowerCase();
             const box = document.getElementById('searchResultBox');
             if (!query) { box.classList.add('hidden'); return; }
+
+            // Bloquear búsquedas de solo 1 o 2 dígitos para proteger la privacidad
+            if (/^\d{1,2}$/.test(queryRaw)) {
+                box.classList.remove('hidden');
+                box.className = "text-xs p-3.5 rounded-2xl border bg-[#070a12] border-rose-500/50 text-rose-300 font-medium";
+                box.innerHTML = `<i class="fa-solid fa-lock text-rose-400 mr-1.5"></i> Por seguridad, debes ingresar tu <strong>Cédula de Identidad</strong> completa (Ej: V-30668946) o tu <strong>Código de Ticket</strong> (Ej: TCK-07-946) para consultar tus datos.`;
+                return;
+            }
 
             let found = [];
             for (let i = 0; i < 100; i++) {
@@ -879,7 +898,6 @@
                     const queryClean = query.replace(/\s/g, '');
 
                     if (
-                        item.number === query || 
                         ticketCode === queryClean || 
                         ciClean.includes(queryClean)
                     ) {
@@ -1046,7 +1064,20 @@
                 link.download = `TicketOficial_${ultimoTicket ? ultimoTicket.code : 'Rifa'}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
+                
                 mostrarToast("¡Ticket descargado con éxito!");
+                
+                // CIERRE AUTOMÁTICO DE LA VENTANA DE DESCARGA Y LIMPIEZA DE LA BÚSQUEDA
+                setTimeout(() => {
+                    cerrarModalTicket();
+                    const searchInput = document.getElementById('searchTicketInput');
+                    const searchBox = document.getElementById('searchResultBox');
+                    if (searchInput) searchInput.value = "";
+                    if (searchBox) {
+                        searchBox.innerHTML = "";
+                        searchBox.classList.add('hidden');
+                    }
+                }, 800);
             }).catch(err => {
                 alert("Error al generar la imagen.");
             });
@@ -1057,7 +1088,10 @@
         function closeAdminModal() { document.getElementById('modalAdmin').classList.add('hidden'); }
 
         function loginAdmin() {
-            if (document.getElementById('adminPassInput').value === '1234') { 
+            const passEntered = document.getElementById('adminPassInput').value.trim();
+            const requiredPass = raffleConfig.admin_password || "1234";
+
+            if (passEntered === requiredPass) { 
                 isAdminLoggedIn = true;
                 document.getElementById('adminAuthSection').classList.add('hidden');
                 document.getElementById('adminContentSection').classList.remove('hidden');
@@ -1082,6 +1116,23 @@
             } else { alert("Clave incorrecta."); }
         }
 
+        async function cambiarClaveAdmin() {
+            const nuevaClave = document.getElementById('adminNewPassInput').value.trim();
+            if (!nuevaClave) { alert("Ingresa una nueva clave válida."); return; }
+
+            raffleConfig.admin_password = nuevaClave;
+
+            if (_supabase) {
+                await _supabase.from('raffle_config').upsert({
+                    id: 1,
+                    admin_password: nuevaClave
+                }, { onConflict: ['id'] });
+            }
+
+            document.getElementById('adminNewPassInput').value = "";
+            mostrarToast("¡Clave de administrador actualizada con éxito!");
+        }
+
         async function publicarGanadorAdmin() {
             const numWinner = document.getElementById('adminWinnerNumInput').value.trim().padStart(2, '0');
             if (!numWinner) { alert("Ingresa un número de boleto."); return; }
@@ -1089,7 +1140,6 @@
             raffleConfig.winner_number = numWinner;
 
             if (_supabase) {
-                // Guardar permanentemente en la DB con ID = 1
                 await _supabase.from('raffle_config').upsert({
                     id: 1,
                     title: raffleConfig.title,
@@ -1102,6 +1152,7 @@
                     cedula: raffleConfig.cedula,
                     whatsapp: raffleConfig.whatsapp,
                     winner_number: numWinner,
+                    admin_password: raffleConfig.admin_password,
                     img1: raffleConfig.img1,
                     img2: raffleConfig.img2,
                     img3: raffleConfig.img3
@@ -1143,6 +1194,7 @@
                     cedula: raffleConfig.cedula,
                     whatsapp: raffleConfig.whatsapp,
                     winner_number: "",
+                    admin_password: raffleConfig.admin_password,
                     img1: raffleConfig.img1,
                     img2: raffleConfig.img2,
                     img3: raffleConfig.img3
@@ -1279,6 +1331,7 @@
                     cedula: raffleConfig.cedula,
                     whatsapp: raffleConfig.whatsapp,
                     winner_number: raffleConfig.winner_number || "",
+                    admin_password: raffleConfig.admin_password,
                     img1: raffleConfig.img1,
                     img2: raffleConfig.img2,
                     img3: raffleConfig.img3
