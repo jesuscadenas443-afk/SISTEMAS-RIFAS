@@ -77,15 +77,15 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <div class="max-w-6xl mx-auto w-full px-4 pt-6 space-y-6">
 
-        <!-- BANNER GANADOR -->
+        <!-- BANNER GANADOR PÚBLICO (PRIVADO Y SEGURO) -->
         <div id="winnerPublicBanner" class="hidden relative bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-slate-950 p-6 sm:p-8 rounded-3xl shadow-2xl border-4 border-yellow-100 text-center space-y-3 animate-bounce">
             <span class="bg-slate-950 text-amber-300 font-black text-xs px-4 py-1.5 rounded-full uppercase tracking-widest inline-block">
-                🏆 ¡TENEMOS GANADOR OFICIAL DEL SORTEO! 🏆
+                🏆 ¡TENEMOS BOLETO GANADOR OFICIAL! 🏆
             </span>
             <h2 class="text-2xl sm:text-4xl font-black uppercase tracking-tight">
                 ¡BOLETO GANADOR: <span id="winnerNumberBanner" class="bg-slate-950 text-yellow-300 font-mono px-5 py-1.5 rounded-2xl">#--</span>!
             </h2>
-            <p id="winnerBuyerInfo" class="text-base sm:text-lg font-black text-slate-950">Sorteo finalizado. Las compras han sido bloqueadas.</p>
+            <p id="winnerBuyerInfo" class="text-base sm:text-lg font-black text-slate-950">¡Felicidades al afortunado ganador! Sorteo finalizado oficialmente.</p>
         </div>
 
         <!-- BANNER PRINCIPAL CON BOTÓN "¿CÓMO PARTICIPAR?" -->
@@ -387,7 +387,7 @@
                         <div class="sm:col-span-2"><label class="block text-slate-300 font-bold mb-1">Metodología *</label><input type="text" id="adminMethodInput" class="w-full bg-slate-900 border border-amber-400/50 rounded-xl p-3 text-amber-300 font-bold"></div>
                         <div class="sm:col-span-2"><label class="block text-slate-300 font-bold mb-1">Descripción</label><input type="text" id="adminDescInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div><label class="block text-slate-300 font-bold mb-1">Precio ($ USD)</label><input type="number" step="0.01" id="adminPriceInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
-                        <div><label class="block text-slate-300 font-bold mb-1">Tasa BCV Manual</label><input type="number" step="0.01" id="adminBcvInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
+                        <div><label class="block text-amber-300 font-black mb-1">⚡ Tasa BCV Manual (Prioridad Admin)</label><input type="number" step="0.01" id="adminBcvInput" class="w-full bg-slate-900 border-2 border-amber-400 rounded-xl p-3 text-amber-300 font-mono font-black"></div>
                         <div><label class="block text-slate-300 font-bold mb-1">Banco Pago Móvil</label><input type="text" id="adminBankInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div><label class="block text-slate-300 font-bold mb-1">Teléfono Pago Móvil</label><input type="text" id="adminPhoneInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div><label class="block text-slate-300 font-bold mb-1">Cédula Pago Móvil</label><input type="text" id="adminCedulaInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
@@ -414,14 +414,15 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE JAVASCRIPT COMPLETO Y CORREGIDO -->
+    <!-- SCRIPT DE JAVASCRIPT CON PRIORIDAD ABSOLUTA DE TASA MANUAL DEL ADMIN -->
     <script>
         const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
 
         let _supabase = null, selectedNumbers = [], numbersData = {}, ultimoTicket = null, tempNuevaClave = "", isAdminSelectActive = false;
-        let raffleConfig = { id: 1, title: "Gran Rifa Digital UNERG", description: "Participa por una Aspiradora y un hidroyet", method: "Lotería del Táchira (Súper Gana 10:00 PM)", price: 5.00, bcvRate: 881.06, bank: "Banco de Venezuela", phone: "04125668044", cedula: "V-30668946", whatsapp: "04125668044", winner_number: "", admin_password: "1234", img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80", img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80", img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80" };
+        let raffleConfig = { id: 1, title: "Gran Rifa Digital UNERG", description: "Participa por una Aspiradora y un hidroyet", method: "Lotería del Táchira (Súper Gana 10:00 PM)", price: 5.00, bcvRate: 0.0, bank: "Banco de Venezuela", phone: "04125668044", cedula: "V-30668946", whatsapp: "04125668044", winner_number: "", admin_password: "1234", img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80", img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80", img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80" };
         let isAdminLoggedIn = false;
+        let adminManualTasaForzada = false; // Bandera para respetar cuando el admin coloque la tasa manualmente
 
         function abrirModalComoParticipar() { document.getElementById('modalComoParticipar').classList.remove('hidden'); }
         function cerrarModalComoParticipar() { document.getElementById('modalComoParticipar').classList.add('hidden'); }
@@ -471,16 +472,40 @@
             }
         }
 
+        // CONSULTA AUTOMÁTICA DE TASA BCV (SOLO ACTÚA SI EL ADMIN NO HA FORZADO UNA TASA MANUAL)
         async function consultarTasaBCVAuto() {
+            if (adminManualTasaForzada) return; // Si el admin fijó una tasa manual, la respetamos por completo
+            const cb = `?_t=${Date.now()}`;
+            
             try {
-                let resp = await fetch('https://ve.dolarapi.com/v1/dolares/oficial');
-                if (resp.ok) { let data = await resp.json(); if (data?.promedio) { actualizarTasaSiCambio(parseFloat(data.promedio)); return; } }
+                let resp = await fetch(`https://ve.dolarapi.com/v1/dolares/oficial${cb}`, { cache: 'no-store' });
+                if (resp.ok) {
+                    let data = await resp.json();
+                    if (data?.promedio && !isNaN(parseFloat(data.promedio)) && parseFloat(data.promedio) > 0) {
+                        actualizarTasaSiCambio(parseFloat(data.promedio));
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            try {
+                let resp2 = await fetch(`https://rates.dolarvzla.com/bcv/current.json${cb}`, { cache: 'no-store' });
+                if (resp2.ok) {
+                    let data2 = await resp2.json();
+                    let rateVal = data2?.current?.usd || data2?.usd;
+                    if (rateVal && !isNaN(parseFloat(rateVal)) && parseFloat(rateVal) > 0) {
+                        actualizarTasaSiCambio(parseFloat(rateVal));
+                        return;
+                    }
+                }
             } catch (e) {}
         }
 
         async function actualizarTasaSiCambio(nuevaTasa) {
-            if (nuevaTasa && !isNaN(nuevaTasa) && Math.abs(raffleConfig.bcvRate - nuevaTasa) > 0.001) {
-                raffleConfig.bcvRate = nuevaTasa; actualizarUIConfiguracion();
+            if (adminManualTasaForzada) return;
+            if (nuevaTasa && !isNaN(nuevaTasa) && Math.abs(raffleConfig.bcvRate - nuevaTasa) > 0.0001) {
+                raffleConfig.bcvRate = nuevaTasa; 
+                actualizarUIConfiguracion();
                 if (_supabase) await _supabase.from('raffle_config').upsert({ id: 1, bcv_rate: nuevaTasa }, { onConflict: ['id'] });
             }
         }
@@ -503,10 +528,11 @@
         window.addEventListener('DOMContentLoaded', async () => {
             renderGridInmediato();
             if (window.supabase) { try { _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); suscripcionTiempoReal(); } catch(e) {} }
-            await sincronizarTodo(); await consultarTasaBCVAuto();
+            await cargarConfiguracion(); // Cargamos de Supabase primero para ver si hay tasa manual guardada
+            await consultarTasaBCVAuto(); // Intentamos actualizar con API si no hay manual forzada
+            await cargarEstadoNumeros();
             verificarEnlaceDirectoBusqueda();
-            setInterval(async () => { await sincronizarTodo(); }, 3000);
-            setInterval(async () => { await consultarTasaBCVAuto(); }, 1800000);
+            setInterval(async () => { await consultarTasaBCVAuto(); await cargarEstadoNumeros(); }, 5000);
         });
 
         async function sincronizarTodo() { await cargarConfiguracion(); await cargarEstadoNumeros(); }
@@ -525,7 +551,13 @@
             raffleConfig.description = data.description || raffleConfig.description;
             raffleConfig.method = data.method || raffleConfig.method;
             raffleConfig.price = parseFloat(data.price) || raffleConfig.price;
-            raffleConfig.bcvRate = parseFloat(data.bcv_rate) || raffleConfig.bcvRate;
+            
+            // Si Supabase tiene una tasa guardada, la respetamos como valor base oficial
+            if (data.bcv_rate && parseFloat(data.bcv_rate) > 0) {
+                raffleConfig.bcvRate = parseFloat(data.bcv_rate);
+                adminManualTasaForzada = true; // Marcar como tasa fija/manual activa
+            }
+            
             raffleConfig.bank = data.bank || raffleConfig.bank;
             raffleConfig.phone = data.phone || raffleConfig.phone;
             raffleConfig.cedula = data.cedula || raffleConfig.cedula;
@@ -547,8 +579,8 @@
             document.getElementById('raffleMethodDisplay').innerText = raffleConfig.method;
             
             const priceFormatted = raffleConfig.price.toFixed(2);
-            const bcvFormatted = raffleConfig.bcvRate.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-            const priceInBs = (raffleConfig.price * raffleConfig.bcvRate).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const bcvFormatted = raffleConfig.bcvRate > 0 ? raffleConfig.bcvRate.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "Cargando...";
+            const priceInBs = raffleConfig.bcvRate > 0 ? (raffleConfig.price * raffleConfig.bcvRate).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "0,00";
 
             document.getElementById('ticketPriceUsdDisplay').innerText = priceFormatted;
             document.getElementById('bcvRateDisplay').innerText = `${bcvFormatted} Bs`;
@@ -569,8 +601,7 @@
             if (hayGanador) {
                 const winnerNum = String(raffleConfig.winner_number).padStart(2, '0');
                 document.getElementById('winnerNumberBanner').innerText = `#${winnerNum}`;
-                const itemWinner = numbersData[winnerNum];
-                document.getElementById('winnerBuyerInfo').innerText = (itemWinner?.name) ? `¡Felicidades a ${itemWinner.name} (CI: ${itemWinner.ci})! Sorteo finalizado.` : `Sorteo finalizado oficialmente.`;
+                document.getElementById('winnerBuyerInfo').innerText = `¡Felicidades al afortunado ganador del boleto #${winnerNum}! Sorteo finalizado de manera oficial.`;
                 winnerBanner.classList.remove('hidden');
             } else { 
                 winnerBanner.classList.add('hidden'); 
@@ -899,7 +930,7 @@
                 document.getElementById('adminDescInput').value = raffleConfig.description;
                 document.getElementById('adminMethodInput').value = raffleConfig.method;
                 document.getElementById('adminPriceInput').value = raffleConfig.price;
-                document.getElementById('adminBcvInput').value = raffleConfig.bcvRate;
+                document.getElementById('adminBcvInput').value = raffleConfig.bcvRate > 0 ? raffleConfig.bcvRate : '';
                 document.getElementById('adminBankInput').value = raffleConfig.bank;
                 document.getElementById('adminPhoneInput').value = raffleConfig.phone;
                 document.getElementById('adminCedulaInput').value = raffleConfig.cedula;
@@ -930,7 +961,13 @@
             raffleConfig.description = document.getElementById('adminDescInput').value;
             raffleConfig.method = document.getElementById('adminMethodInput').value;
             raffleConfig.price = parseFloat(document.getElementById('adminPriceInput').value) || 5.00;
-            raffleConfig.bcvRate = parseFloat(document.getElementById('adminBcvInput').value) || raffleConfig.bcvRate;
+            
+            const nuevaTasaManual = parseFloat(document.getElementById('adminBcvInput').value);
+            if (!isNaN(nuevaTasaManual) && nuevaTasaManual > 0) {
+                raffleConfig.bcvRate = nuevaTasaManual;
+                adminManualTasaForzada = true; // Forzar tasa manual ingresada por ti
+            }
+
             raffleConfig.bank = document.getElementById('adminBankInput').value;
             raffleConfig.phone = document.getElementById('adminPhoneInput').value;
             raffleConfig.cedula = document.getElementById('adminCedulaInput').value;
@@ -938,10 +975,24 @@
 
             if (_supabase) {
                 await _supabase.from('raffle_config').upsert({
-                    id: 1, title: raffleConfig.title, description: raffleConfig.description, method: raffleConfig.method, price: raffleConfig.price, bcv_rate: raffleConfig.bcvRate, bank: raffleConfig.bank, phone: raffleConfig.phone, cedula: raffleConfig.cedula, whatsapp: raffleConfig.whatsapp, winner_number: raffleConfig.winner_number || "", admin_password: raffleConfig.admin_password || "1234"
+                    id: 1, 
+                    title: raffleConfig.title, 
+                    description: raffleConfig.description, 
+                    method: raffleConfig.method, 
+                    price: raffleConfig.price, 
+                    bcv_rate: raffleConfig.bcvRate, 
+                    bank: raffleConfig.bank, 
+                    phone: raffleConfig.phone, 
+                    cedula: raffleConfig.cedula, 
+                    whatsapp: raffleConfig.whatsapp, 
+                    winner_number: raffleConfig.winner_number || "", 
+                    admin_password: raffleConfig.admin_password || "1234"
                 }, { onConflict: ['id'] });
             }
-            await sincronizarTodo(); closeAdminModal(); mostrarToast("¡Ajustes guardados!");
+            actualizarUIConfiguracion();
+            await sincronizarTodo(); 
+            closeAdminModal(); 
+            mostrarToast("¡Ajustes y tasa BCV guardados con éxito!");
         }
 
         async function publicarGanadorAdmin() {
@@ -971,7 +1022,7 @@
             if (hayGanador) {
                 const numWinner = String(raffleConfig.winner_number).padStart(2, '0');
                 if (numbersData[numWinner]) {
-                    statusTxt.innerHTML = `<span class="text-amber-400 font-black">Ganador:</span> #${numWinner} - ${numbersData[numWinner].name}`;
+                    statusTxt.innerHTML = `<span class="text-amber-400 font-black">Ganador:</span> #${numWinner} - ${numbersData[numWinner].name} (${numbersData[numWinner].ci})`;
                     btnNotif.disabled = false; btnNotif.className = "bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-4 py-3 rounded-xl text-xs uppercase cursor-pointer";
                 } else {
                     statusTxt.innerHTML = "Boleto sin comprador registrado.";
