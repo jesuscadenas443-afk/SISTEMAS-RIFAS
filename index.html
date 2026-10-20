@@ -379,9 +379,9 @@
                     </div>
                 </div>
 
-                <!-- CONFIGURACIÓN GENERAL -->
+                <!-- CONFIGURACIÓN GENERAL Y SUBIDA DE IMÁGENES DESDE GALERÍA -->
                 <div class="bg-[#070a12] p-4 sm:p-5 rounded-3xl border-2 border-slate-700 space-y-3">
-                    <h3 class="font-black text-sm text-amber-400 border-b border-slate-700 pb-2">Configuración General del Sorteo</h3>
+                    <h3 class="font-black text-sm text-amber-400 border-b border-slate-700 pb-2">Configuración General y Galería de Premios</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <div class="sm:col-span-2"><label class="block text-slate-300 font-bold mb-1">Título</label><input type="text" id="adminTitleInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div class="sm:col-span-2"><label class="block text-slate-300 font-bold mb-1">Metodología *</label><input type="text" id="adminMethodInput" class="w-full bg-slate-900 border border-amber-400/50 rounded-xl p-3 text-amber-300 font-bold"></div>
@@ -392,6 +392,34 @@
                         <div><label class="block text-slate-300 font-bold mb-1">Teléfono Pago Móvil</label><input type="text" id="adminPhoneInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div><label class="block text-slate-300 font-bold mb-1">Cédula Pago Móvil</label><input type="text" id="adminCedulaInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-slate-100 font-bold"></div>
                         <div><label class="block text-emerald-400 font-black mb-1">WhatsApp Personal *</label><input type="text" id="adminWhatsappInput" class="w-full bg-slate-900 border-2 border-emerald-500/50 rounded-xl p-3 text-slate-100 font-bold"></div>
+                        
+                        <!-- SECCIÓN DE SUBIDA DE IMÁGENES DESDE GALERÍA -->
+                        <div class="sm:col-span-2 pt-2 border-t border-slate-800"><p class="text-amber-400 font-black mb-1">🖼️ Subir Imágenes de Premios desde tu Galería</p><p class="text-[11px] text-slate-400">Selecciona una imagen para cargarla automáticamente o pega el enlace directo.</p></div>
+                        
+                        <div class="sm:col-span-2 space-y-1">
+                            <label class="block text-slate-300 font-bold">Imagen Premio 1</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="adminImg1" placeholder="URL o enlace automático" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 font-mono text-xs">
+                                <input type="file" id="fileInputImg1" accept="image/*" onchange="subirImagenPremio(1)" class="text-xs bg-slate-800 border border-slate-700 rounded-xl p-2 cursor-pointer text-slate-300">
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1">
+                            <label class="block text-slate-300 font-bold">Imagen Premio 2</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="adminImg2" placeholder="URL o enlace automático" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 font-mono text-xs">
+                                <input type="file" id="fileInputImg2" accept="image/*" onchange="subirImagenPremio(2)" class="text-xs bg-slate-800 border border-slate-700 rounded-xl p-2 cursor-pointer text-slate-300">
+                            </div>
+                        </div>
+
+                        <div class="sm:col-span-2 space-y-1">
+                            <label class="block text-slate-300 font-bold">Imagen Premio 3</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="adminImg3" placeholder="URL o enlace automático" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-slate-100 font-mono text-xs">
+                                <input type="file" id="fileInputImg3" accept="image/*" onchange="subirImagenPremio(3)" class="text-xs bg-slate-800 border border-slate-700 rounded-xl p-2 cursor-pointer text-slate-300">
+                            </div>
+                        </div>
+
                     </div>
                     <button onclick="guardarAjustesAdmin()" id="btnSaveAdmin" class="bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black px-6 py-3.5 rounded-xl uppercase">Guardar Ajustes</button>
                 </div>
@@ -414,15 +442,31 @@
         </div>
     </div>
 
-    <!-- SCRIPT DE JAVASCRIPT CON PRIORIDAD ABSOLUTA DE TASA MANUAL DEL ADMIN -->
+    <!-- SCRIPT DE JAVASCRIPT CON CARGA DE IMÁGENES DESDE GALERÍA Y TASA MANUAL -->
     <script>
         const SUPABASE_URL = 'https://tmeihbzgemskawhejspf.supabase.co';
         const SUPABASE_ANON_KEY = 'sb_publishable_JvpX-KnJow01wDOpzDPUwA_gYNMawtM';
 
         let _supabase = null, selectedNumbers = [], numbersData = {}, ultimoTicket = null, tempNuevaClave = "", isAdminSelectActive = false;
-        let raffleConfig = { id: 1, title: "Gran Rifa Digital UNERG", description: "Participa por una Aspiradora y un hidroyet", method: "Lotería del Táchira (Súper Gana 10:00 PM)", price: 5.00, bcvRate: 0.0, bank: "Banco de Venezuela", phone: "04125668044", cedula: "V-30668946", whatsapp: "04125668044", winner_number: "", admin_password: "1234", img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80", img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80", img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80" };
+        let raffleConfig = { 
+            id: 1, 
+            title: "Gran Rifa Digital UNERG", 
+            description: "Participa por una Aspiradora y un hidroyet", 
+            method: "Lotería del Táchira (Súper Gana 10:00 PM)", 
+            price: 5.00, 
+            bcvRate: 0.0, 
+            bank: "Banco de Venezuela", 
+            phone: "04125668044", 
+            cedula: "V-30668946", 
+            whatsapp: "04125668044", 
+            winner_number: "", 
+            admin_password: "1234", 
+            img1: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80", 
+            img2: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?auto=format&fit=crop&w=600&q=80", 
+            img3: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=600&q=80" 
+        };
         let isAdminLoggedIn = false;
-        let adminManualTasaForzada = false; // Bandera para respetar cuando el admin coloque la tasa manualmente
+        let adminManualTasaForzada = false;
 
         function abrirModalComoParticipar() { document.getElementById('modalComoParticipar').classList.remove('hidden'); }
         function cerrarModalComoParticipar() { document.getElementById('modalComoParticipar').classList.add('hidden'); }
@@ -472,9 +516,8 @@
             }
         }
 
-        // CONSULTA AUTOMÁTICA DE TASA BCV (SOLO ACTÚA SI EL ADMIN NO HA FORZADO UNA TASA MANUAL)
         async function consultarTasaBCVAuto() {
-            if (adminManualTasaForzada) return; // Si el admin fijó una tasa manual, la respetamos por completo
+            if (adminManualTasaForzada) return;
             const cb = `?_t=${Date.now()}`;
             
             try {
@@ -528,8 +571,8 @@
         window.addEventListener('DOMContentLoaded', async () => {
             renderGridInmediato();
             if (window.supabase) { try { _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); suscripcionTiempoReal(); } catch(e) {} }
-            await cargarConfiguracion(); // Cargamos de Supabase primero para ver si hay tasa manual guardada
-            await consultarTasaBCVAuto(); // Intentamos actualizar con API si no hay manual forzada
+            await cargarConfiguracion();
+            await consultarTasaBCVAuto();
             await cargarEstadoNumeros();
             verificarEnlaceDirectoBusqueda();
             setInterval(async () => { await consultarTasaBCVAuto(); await cargarEstadoNumeros(); }, 5000);
@@ -552,16 +595,18 @@
             raffleConfig.method = data.method || raffleConfig.method;
             raffleConfig.price = parseFloat(data.price) || raffleConfig.price;
             
-            // Si Supabase tiene una tasa guardada, la respetamos como valor base oficial
             if (data.bcv_rate && parseFloat(data.bcv_rate) > 0) {
                 raffleConfig.bcvRate = parseFloat(data.bcv_rate);
-                adminManualTasaForzada = true; // Marcar como tasa fija/manual activa
+                adminManualTasaForzada = true;
             }
             
             raffleConfig.bank = data.bank || raffleConfig.bank;
             raffleConfig.phone = data.phone || raffleConfig.phone;
             raffleConfig.cedula = data.cedula || raffleConfig.cedula;
             raffleConfig.whatsapp = data.whatsapp || data.phone || raffleConfig.whatsapp;
+            raffleConfig.img1 = data.img1 || raffleConfig.img1;
+            raffleConfig.img2 = data.img2 || raffleConfig.img2;
+            raffleConfig.img3 = data.img3 || raffleConfig.img3;
             raffleConfig.winner_number = esNumeroGanadorValido(data.winner_number) ? String(data.winner_number).trim().padStart(2, '0') : "";
             raffleConfig.admin_password = data.admin_password || raffleConfig.admin_password || "1234";
             actualizarUIConfiguracion();
@@ -578,6 +623,10 @@
             document.getElementById('raffleDescription').innerText = raffleConfig.description;
             document.getElementById('raffleMethodDisplay').innerText = raffleConfig.method;
             
+            if(raffleConfig.img1) document.getElementById('imgPrize1').src = raffleConfig.img1;
+            if(raffleConfig.img2) document.getElementById('imgPrize2').src = raffleConfig.img2;
+            if(raffleConfig.img3) document.getElementById('imgPrize3').src = raffleConfig.img3;
+
             const priceFormatted = raffleConfig.price.toFixed(2);
             const bcvFormatted = raffleConfig.bcvRate > 0 ? raffleConfig.bcvRate.toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "Cargando...";
             const priceInBs = raffleConfig.bcvRate > 0 ? (raffleConfig.price * raffleConfig.bcvRate).toLocaleString('es-VE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : "0,00";
@@ -677,6 +726,26 @@
 
                 if (isAdminLoggedIn && !isAdminSelectActive) renderAdminTable();
             } catch (err) {}
+        }
+
+        // FUNCIÓN PARA SUBIR IMAGEN DE PREMIO DESDE LA GALERÍA A SUPABASE
+        async function subirImagenPremio(index) {
+            const fileInput = document.getElementById(`fileInputImg${index}`);
+            if (!fileInput || fileInput.files.length === 0) return;
+            const file = fileInput.files[0];
+            mostrarToast(`Subiendo imagen de premio ${index}...`);
+
+            try {
+                const fileName = `premio_${index}_${Date.now()}.${file.name.split('.').pop()}`;
+                const { data, error } = await _supabase.storage.from('captures').upload(fileName, file);
+                if (error) { alert("Error al subir imagen: " + error.message); return; }
+
+                const publicUrl = _supabase.storage.from('captures').getPublicUrl(fileName).data.publicUrl;
+                document.getElementById(`adminImg${index}`).value = publicUrl;
+                mostrarToast(`¡Imagen ${index} cargada con éxito!`);
+            } catch(err) {
+                alert("Error al procesar la imagen.");
+            }
         }
 
         function toggleSelectNumber(numStr) {
@@ -935,6 +1004,9 @@
                 document.getElementById('adminPhoneInput').value = raffleConfig.phone;
                 document.getElementById('adminCedulaInput').value = raffleConfig.cedula;
                 document.getElementById('adminWhatsappInput').value = raffleConfig.whatsapp || raffleConfig.phone;
+                document.getElementById('adminImg1').value = raffleConfig.img1 || '';
+                document.getElementById('adminImg2').value = raffleConfig.img2 || '';
+                document.getElementById('adminImg3').value = raffleConfig.img3 || '';
                 document.getElementById('adminWinnerNumInput').value = raffleConfig.winner_number || "";
                 revisarEstadoGanadorAdmin(); renderAdminTable();
             } else { alert("Clave incorrecta."); }
@@ -965,13 +1037,16 @@
             const nuevaTasaManual = parseFloat(document.getElementById('adminBcvInput').value);
             if (!isNaN(nuevaTasaManual) && nuevaTasaManual > 0) {
                 raffleConfig.bcvRate = nuevaTasaManual;
-                adminManualTasaForzada = true; // Forzar tasa manual ingresada por ti
+                adminManualTasaForzada = true;
             }
 
             raffleConfig.bank = document.getElementById('adminBankInput').value;
             raffleConfig.phone = document.getElementById('adminPhoneInput').value;
             raffleConfig.cedula = document.getElementById('adminCedulaInput').value;
             raffleConfig.whatsapp = document.getElementById('adminWhatsappInput').value;
+            raffleConfig.img1 = document.getElementById('adminImg1').value;
+            raffleConfig.img2 = document.getElementById('adminImg2').value;
+            raffleConfig.img3 = document.getElementById('adminImg3').value;
 
             if (_supabase) {
                 await _supabase.from('raffle_config').upsert({
@@ -985,6 +1060,9 @@
                     phone: raffleConfig.phone, 
                     cedula: raffleConfig.cedula, 
                     whatsapp: raffleConfig.whatsapp, 
+                    img1: raffleConfig.img1,
+                    img2: raffleConfig.img2,
+                    img3: raffleConfig.img3,
                     winner_number: raffleConfig.winner_number || "", 
                     admin_password: raffleConfig.admin_password || "1234"
                 }, { onConflict: ['id'] });
@@ -992,7 +1070,7 @@
             actualizarUIConfiguracion();
             await sincronizarTodo(); 
             closeAdminModal(); 
-            mostrarToast("¡Ajustes y tasa BCV guardados con éxito!");
+            mostrarToast("¡Ajustes, imágenes y tasa BCV guardados con éxito!");
         }
 
         async function publicarGanadorAdmin() {
