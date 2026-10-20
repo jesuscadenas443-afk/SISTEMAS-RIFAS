@@ -639,12 +639,13 @@
             document.getElementById('modalComoParticipar').classList.add('hidden');
         }
 
-        function generarCodigoTicket(nums, ci) {
+        function generarCodigoTicket(nums, ci, timestamp) {
             const ciClean = ci ? ci.replace(/\D/g, '').slice(-3) : '100';
             let primerNum = "00";
             if (Array.isArray(nums) && nums.length > 0) primerNum = nums[0];
             else if (typeof nums === 'string') primerNum = nums.split(',')[0].trim();
-            return `TCK-${primerNum.padStart(2, '0')}-${ciClean}`;
+            const timeSuffix = timestamp ? timestamp.toString().slice(-4) : Math.floor(Math.random() * 9000 + 1000);
+            return `TCK-${primerNum.padStart(2, '0')}-${ciClean}-${timeSuffix}`;
         }
 
         function mostrarToast(mensaje) {
@@ -1016,7 +1017,7 @@
             }
         }
 
-        // BUSCADOR SEGURO: Únicamente permite consultar introduciendo la Cédula o el Código de Ticket
+        // BUSCADOR SEGURO: Agrupa por timestamp de compra para separar compras distintas y mostrar cada ticket agrupado
         function consultarBoleto() {
             const queryRaw = document.getElementById('searchTicketInput').value.trim();
             const queryClean = queryRaw.toLowerCase().replace(/\s/g, '');
@@ -1024,17 +1025,18 @@
             
             if (!queryClean) { box.classList.add('hidden'); return; }
 
-            // Recopilar todos los boletos registrados
             let list = [];
             for (let i = 0; i < 100; i++) {
                 const numStr = i.toString().padStart(2, '0');
                 if (numbersData[numStr]) list.push(numbersData[numStr]);
             }
 
-            // Agrupar compras por Cédula + Referencia para formar tickets unificados
+            // Agrupar por Cédula + Timestamp de compra (así compras separadas generan tickets separados)
             let ticketsMap = {};
             list.forEach(item => {
-                const key = `${(item.ci || '').trim()}_${(item.reference || '').trim()}`;
+                const timeKey = item.purchase_time || 'default';
+                const key = `${(item.ci || '').trim()}_${timeKey}`;
+                
                 if (!ticketsMap[key]) {
                     ticketsMap[key] = {
                         name: item.name,
@@ -1042,6 +1044,7 @@
                         phone: item.phone,
                         reference: item.reference,
                         status: item.status,
+                        purchase_time: item.purchase_time,
                         numbers: [item.number]
                     };
                 } else {
@@ -1052,11 +1055,10 @@
                 }
             });
 
-            // Filtrar exclusivamente por Cédula o Código de Ticket exacto
             let found = [];
             Object.values(ticketsMap).forEach(tck => {
                 const ciClean = (tck.ci || '').toLowerCase().replace(/\s/g, '');
-                const tckCode = generarCodigoTicket(tck.numbers, tck.ci).toLowerCase();
+                const tckCode = generarCodigoTicket(tck.numbers, tck.ci, tck.purchase_time).toLowerCase();
 
                 if (ciClean.includes(queryClean) || tckCode === queryClean) {
                     found.push(tck);
@@ -1073,7 +1075,7 @@
                     const sortedNums = f.numbers.sort((a, b) => parseInt(a) - parseInt(b)).join(', ');
                     const countNums = f.numbers.length;
                     const badge = f.status === 'sold' ? '<span class="text-emerald-400 font-black">🟢 CONFIRMADO Y PAGADO</span>' : '<span class="text-amber-400 font-black">🟡 EN VERIFICACIÓN</span>';
-                    const tckCode = generarCodigoTicket(f.numbers, f.ci);
+                    const tckCode = generarCodigoTicket(f.numbers, f.ci, f.purchase_time);
                     
                     let downloadBtn = '';
                     if (f.status === 'sold') {
@@ -1083,7 +1085,8 @@
                             ci: f.ci,
                             numbers: sortedNums,
                             count: countNums,
-                            reference: f.reference
+                            reference: f.reference,
+                            purchase_time: f.purchase_time
                         }).replace(/'/g, "&apos;");
 
                         downloadBtn = `<button onclick='abrirTicketOficial(${ticketDataJson})' class="mt-2 w-full bg-amber-400 hover:bg-amber-300 text-slate-950 font-black py-2.5 rounded-xl text-xs uppercase flex items-center justify-center gap-2 shadow">
@@ -1136,13 +1139,14 @@
             let referencia = document.getElementById('inputReferencia').value.trim();
             if (metodo === 'efectivo' && !referencia) referencia = 'EFECTIVO';
 
+            const purchaseTimestamp = Date.now();
             const fileInput = document.getElementById('inputCapture');
             let captureUrl = '';
 
             if (_supabase && fileInput && fileInput.files.length > 0) {
                 const file = fileInput.files[0];
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${Date.now()}_${selectedNumbers.join('-')}.${fileExt}`;
+                const fileName = `${purchaseTimestamp}_${selectedNumbers.join('-')}.${fileExt}`;
 
                 const { data: uploadData, error: uploadError } = await _supabase.storage
                     .from('captures')
@@ -1167,7 +1171,8 @@
                             ci: cedula,
                             phone: telefono,
                             reference: referencia,
-                            capture_url: captureUrl
+                            capture_url: captureUrl,
+                            purchase_time: purchaseTimestamp
                         }, { onConflict: ['number'] });
                 }
             }
@@ -1175,7 +1180,10 @@
             const numWa = raffleConfig.whatsapp || raffleConfig.phone;
             const waFormat = "58" + numWa.replace(/\D/g, ''); 
 
+            const tckCodeTemp = generarCodigoTicket(selectedNumbers, cedula, purchaseTimestamp);
+
             let msg = `¡Hola! 👋 He reportado el pago de mi(s) boleto(s) para *${raffleConfig.title}*:\n\n` +
+                `⭐ *Código de Compra:* ${tckCodeTemp}\n` +
                 `🔢 *Boleto(s):* ${selectedNumbers.join(', ')} (${selectedNumbers.length} nºs)\n` +
                 `👤 *Nombre:* ${nombre}\n` +
                 `🆔 *Cédula:* ${cedula}\n` +
@@ -1210,7 +1218,8 @@
                 cedula: tckObj.ci,
                 numeros: tckObj.numbers,
                 count: tckObj.count || 1,
-                referencia: tckObj.reference
+                referencia: tckObj.reference,
+                purchase_time: tckObj.purchase_time
             };
 
             document.getElementById('ticketCodeDisplay').innerText = ultimoTicket.code;
@@ -1218,7 +1227,7 @@
             document.getElementById('tktCedula').innerText = ultimoTicket.cedula;
             document.getElementById('tktNumeros').innerText = ultimoTicket.numeros;
             document.getElementById('tktCount').innerText = ultimoTicket.count;
-            document.getElementById('tktRef').innerText = ultimoTicket.reference;
+            document.getElementById('tktRef').innerText = ultimoTicket.referencia;
 
             document.getElementById('modalTicket').classList.remove('hidden');
         }
@@ -1500,7 +1509,7 @@
             if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
 
             const currentUrl = window.location.href.split('#')[0];
-            const tckCode = generarCodigoTicket(itemWinner.number, itemWinner.ci);
+            const tckCode = generarCodigoTicket(itemWinner.number, itemWinner.ci, itemWinner.purchase_time);
 
             let msgGanador = `🎉🎉 ¡¡¡FELICITACIONES *${itemWinner.name.toUpperCase()}*!!! 🎉🎉\n\n` +
                 `🏆 ¡ERES EL AFORTUNADO GANADOR DE LA *${raffleConfig.title.toUpperCase()}*! 🏆\n\n` +
@@ -1523,6 +1532,7 @@
             if (!rawNums || !name || !ci) { alert("Por favor indica el boleto (o boletos separados por coma), nombre y cédula."); return; }
 
             const numsArray = rawNums.split(',').map(n => n.trim().padStart(2, '0')).filter(n => n !== "");
+            const purchaseTimestamp = Date.now();
 
             if (_supabase) {
                 for (const num of numsArray) {
@@ -1533,7 +1543,8 @@
                         ci: ci,
                         phone: 'EFECTIVO',
                         reference: 'PAGO EFECTIVO DIRECTO',
-                        capture_url: ''
+                        capture_url: '',
+                        purchase_time: purchaseTimestamp
                     }, { onConflict: ['number'] });
                 }
             }
@@ -1563,11 +1574,21 @@
             if (!cleanPhone.startsWith('58')) cleanPhone = '58' + cleanPhone;
 
             const currentUrl = window.location.href.split('#')[0];
-            const codigoTicket = generarCodigoTicket(item.number, item.ci);
+            
+            // Recopilar todos los números asociados a esta misma compra (mismo timestamp y cédula)
+            let numerosCompra = [item.number];
+            Object.values(numbersData).forEach(n => {
+                if (n.ci === item.ci && n.purchase_time === item.purchase_time && n.number !== item.number) {
+                    numerosCompra.push(n.number);
+                }
+            });
+            numerosCompra.sort((a, b) => parseInt(a) - parseInt(b));
+            const numerosStr = numerosCompra.join(', ');
+            const codigoTicket = generarCodigoTicket(numerosCompra, item.ci, item.purchase_time);
 
             let textNotif = `¡Hola *${nombreCliente}*! 🎉\n\n` +
                 `Tu pago para la *${raffleConfig.title}* ha sido *VERIFICADO Y CONFIRMADO* con éxito. ✅\n\n` +
-                `🎟️ *Boleto Confirmado:* #${item.number}\n` +
+                `🎟️ *Boleto(s) Confirmado(s):* #${numerosStr} (${numerosCompra.length} nºs)\n` +
                 `🆔 *Cédula:* ${item.ci || 'Registrada'}\n` +
                 `💳 *Referencia:* ${item.reference || 'Verificada'}\n` +
                 `⭐ *Código de Ticket:* ${codigoTicket}\n\n` +
@@ -1649,7 +1670,8 @@
                     ci: item.ci || 'V-00000000',
                     phone: item.phone || '0000000000',
                     reference: item.reference || 'VERIFICADO',
-                    capture_url: item.capture_url || ''
+                    capture_url: item.capture_url || '',
+                    purchase_time: item.purchase_time || Date.now()
                 }, { onConflict: ['number'] });
 
                 mostrarToast(`¡Boleto #${numberStr} actualizado a ${newStatus === 'sold' ? 'PAGADO' : newStatus.toUpperCase()}!`);
